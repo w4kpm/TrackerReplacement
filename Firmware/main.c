@@ -27,50 +27,49 @@
 #include "stm32f3xx.h"
 
 // Create our initial arrays - I don't want this stuff on the stack
-static double z[2] = {0.0, 0.0};
-static double x[3] = {0.0, 0.0, 0.0};
-static double EYE3[3][3]={{1.0, 0,0},
-			  {0,1.0,0},
-			  {0,0,1.0}};
-
-static double EYE2[2][2]={{1.0, 0},
-			  {0,1.0}};
 
 
-static double P[3][3] = {{1000, 0, 0},
-			 {0, 1000, 0},
-			 {0,0,1000}};
-static double R[2][2] = {{2.77, 0},
-			 { 0, 0.694}};
-static double K[3][2] = {{0, 0},
-			 { 0, 0},
-			 { 0, 0}};
 
-static double Q[3][3] = {{0.01, 0.00, 0.00},
-			 {0.00, 0.01, 0.00},
-			 {0.00, 0.00, 0.01}};
+#define ADC_GRP1_NUM_CHANNELS   2
 
-static double H[2][3] = {{1.00, 0.00, 0.00},
-			 {0.00, 1.00, 0.00}};
+#define ADC_GRP1_BUF_DEPTH      1
 
-static double F[3][3] = {{1.00, 0.00, 0.00},
-			 {0.00, 1.00, 1.00},
-			 {0.00, 0.00, 1.00}};
-		 
+static adcsample_t samples1[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 
-double testm[3][2] = {{1,2},
-		      {3,4},
-		      {5,6}};
-		    
-double testm2[2][3] = {{1,2,3},
-		       {4,5,6}};
-// holding registers for kalman calulations    
-static double result1[3][3];
-static double result2[3][3];
-static double result3[3][3];
-static double result4[3][3];
-static double result5[3][3];
-		 
+
+
+
+
+size_t nx = 0, ny = 0;
+static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
+
+  (void)adcp;
+  (void)err;
+  dbg('error!!');
+}
+
+
+
+static const ADCConversionGroup adcgrpcfg1 = {
+  FALSE,
+  ADC_GRP1_NUM_CHANNELS,
+  NULL,
+  adcerrorcallback,
+  ADC_CFGR_CONT,            /* CFGR    */
+  ADC_TR(0, 4095),          /* TR1     */
+  {                         /* SMPR[2] sample Register */
+    0,
+    ADC_SMPR2_SMP_AN18(ADC_SMPR_SMP_601P5)|ADC_SMPR2_SMP_AN13(ADC_SMPR_SMP_601P5)
+  },
+  {                         /* SQR[4]  Sequence Register - order & channel to read*/
+      ADC_SQR1_SQ1_N(ADC_CHANNEL_IN13)|ADC_SQR1_SQ2_N(ADC_CHANNEL_IN18),
+    0,
+    0,
+    0
+  }
+};
+
+
 
 
 #define CS 0
@@ -82,10 +81,6 @@ static double result5[3][3];
 
 #define a_lsb 0.061
 #define g_lsb 0.00875
-
-static uint8_t txbuf[2];
-static uint8_t rxbuf[2];
-static char text[255];
 
 
 // this should set a timeout of .625 seconds (LSI = 40k / (64 * 1000))
@@ -120,7 +115,9 @@ static const SPIConfig std_spicfg2 = {
   SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0                    /*CR2 register*/
 };
 
-
+static uint8_t txbuf[10];
+static uint8_t rxbuf[10];
+float currentAngle;
 uint8_t spi_read(device,location)
 {
 
@@ -154,13 +151,22 @@ void spi_write(device,location,data)
 static mailbox_t RxMbx;
 #define MAILBOX_SIZE 25
 static msg_t RxMbxBuff[MAILBOX_SIZE];
+
+static mailbox_t RxMbx2;
+static msg_t RxMbx2Buff[MAILBOX_SIZE];
+
+
 static char current_key;
 static  uint16_t step =0;
 static  int16_t deg,speed =0;
 static double deg2;
 static char rx_text[32][32];
+static char rx2_text[32][32];
 static int rx_queue_pos=0;
 static int rx_queue_num=0;
+static int rx2_queue_pos=0;
+static int rx2_queue_num=0;
+
 static uint8_t my_address = 0x10;
 static SerialConfig uartCfg =
 {
@@ -178,6 +184,7 @@ static SerialConfig uartCfg2 =
     0,
     0,
 };
+
 
 
 dbg(char *string)
@@ -244,285 +251,10 @@ uint16_t wCRCWord = 0xFFFF;
 } // End: CRC16
 
 
-// find the determinant of a 2x2 matrix
-double det2(double *a)
-{
-    
-    return a[0]*a[3] - a[1] * a[2];
-}
-
-
-
-int cofactor_pos [3][2] = {{1,2},
-			   {0,2},
-			   {0,1}};
-
 				
-double* cofactor(double* mat,double* cf,int row,int col)
-{
-    int cfp[2][2][2];
-    int r,c;
-    for (r=0;r<2;r++)
-	for(c=0;c<2;c++)	   
-	    {
-		cf[r*2+c] = mat[cofactor_pos[row][r]*3+cofactor_pos[col][c]];
-	    }
-    return cf;
-}
-
-double oddeven(int pos)
-{
-    if (pos%2==1)
-	return -1.0;
-    return 1.0;
-}
-
-
-double det3(double* mat)
-{
-    int row,col;
-    double cf[2][2];
-    double det = 0;
-    for (row=0;row<3;row++)
-	    {
-		//chprintf((BaseSequentialStream*)&SD1,"%.2f(%.2f)\r\n",oddeven(row+col)*mat[row*3+col],det2(cofactor(mat,&cf,row,col)));
-	    det=det+(oddeven(row)*
-		     mat[row*3]*
-		     det2(cofactor(mat,&cf,row,0)));
-	    }
-    return det;
-}
-
-
-double* inversem2(double* mat,double* inversem)
-{
-    double det;
-    det= 1.0/(det2(mat));
-    int row,col;
-
-    inversem[0*2+0]=mat[1*2+1]*det;
-    inversem[1*2+1]=mat[0*2+0]*det;
-    inversem[1*2+0]=mat[1*2+0]*det*-1.0;
-    inversem[0*2+1]=mat[0*2+1]*det*-1.0;
-		
-    return inversem;
-}
-
-
-double* inversem3(double* mat,double* inversem)
-{
-    int row,col;
-    double cf[2][2];
-    double det;
-    det = det3(mat);
-    
-
-    for (row=0;row<3;row++)
-	for (col=0;col<3;col++)
-
-	    {
-
-		inversem[col*3+row] = ((oddeven(row+col)*
-					det2(cofactor(mat,&cf,row,col)))/det);
-	    }
-    return inversem;
-    
-}
-
-
-double* transpose(double* matrix,double* invm, int mrow, int mcol)
-{
-    // matrix and invm are assumed to be correct dimensions.
-    // mrow and mcol are the dimensions of the original matrix
-    int x,y;
-    for(x=0;x<mrow;x++)
-	for(y=0;y<mcol;y++)
-	    invm[y*mrow+x] = matrix[x*mcol+y];
-    return invm;
-}
-
-
-double* mmult(double* a,double* b,double* result, int arow,int acol,int brow, int bcol)
-{
-    int row,col,curpos;
-    double* currcel;
-    for (row=0;row<arow;row++)
-	for (col=0;col<bcol;col++)
-	    {
-		currcel = &result[row*bcol+col];
-		*currcel =0;
-		for (curpos=0;curpos<brow;curpos++)
-		    {
-			*currcel = *currcel + b[curpos*bcol+col]*a[row*acol+curpos];
-		    }
-	    }
-    return result;
-}
-
-
-double* madd(double* a,double* b,double* result, int rows,int cols)
-{
-    int row,col;
-    for (row=0;row<rows;row++)
-	for(col=0;col<cols;col++)
-	    result[row*cols+col] = a[row*cols+col]+b[row*cols+col];
-    return result;
-}
-
-
-double* msub(double* a,double* b,double* result, int rows,int cols)
-{
-    int row,col;
-    for (row=0;row<rows;row++)
-	for(col=0;col<cols;col++)
-	    result[row*cols+col] = a[row*cols+col]-b[row*cols+col];
-    return result;
-}
 
 
 
-
-void print_matrix(double* m,int rows,int cols,char* s)
-{
-    int x,y;
-    chprintf((BaseSequentialStream*)&SD1,"matrix %s  %dx%d:\r\n",s,rows,cols);
-    for (x=0;x<rows;x++)
-      {
-	  chprintf((BaseSequentialStream*)&SD1,"\r\n   ");
-	  for(y=0;y<cols;y++)
-	      chprintf((BaseSequentialStream*)&SD1,"%.7f ",m[x*cols+y]);
-      }
-    chprintf((BaseSequentialStream*)&SD1,"\r\n\r\n");
-  
-}
-
-
-
-
-double magnitude (double a, double b)
-{
-    //return 1.0;
-    return sqrt(a*a+b*b);
-}
-
-
-static THD_WORKING_AREA(waThread2, 2048);
-static THD_FUNCTION(Thread2, arg) {
-    uint8_t status;
-    int lasttime = 0;
-    double dt;
-    double ticks = TIME_S2I(1) * 1.0;
-  while (TRUE) {
-    status = spi_read(&std_spicfg1,0x07);
-    //status=1;
-    //chprintf((BaseSequentialStream*)&SD1,"status %d \r\n",status);
-    if (status != 0)
-      {
-	  dt = (chVTGetSystemTimeX()-lasttime)/ticks;
-	  ///dt = .003;
-	  //chprintf((BaseSequentialStream*)&SD1,"'time':%.4f, ",(chVTGetSystemTimeX()-lasttime)/ticks);
-	  F[0][1] = dt;
-	  F[1][2] = dt;
-	  //print_matrix(&F,3,3,"F");
-	lasttime  = chVTGetSystemTimeX();
-	int16_t test;
-	double ax;
-	double ay;
-	double az;
-	double gx;
-	double gy;
-	double gz;
-
-	ax = ((int16_t)(spi_read(&std_spicfg1,0x29)<<8|spi_read(&std_spicfg1,0x28))) * a_lsb ;
-	ay = ((int16_t)(spi_read(&std_spicfg1,0x2b)<<8|spi_read(&std_spicfg1,0x2a))) * a_lsb;
-	az = ((int16_t)(spi_read(&std_spicfg1,0x2d)<<8|spi_read(&std_spicfg1,0x2c)))* a_lsb;
-	
-	//chprintf((BaseSequentialStream*)&SD1,"accel:%.2f,%.2f,%.2f -mag %.2f ",ax,ay,az,360.0*(asin(ay/magnitude(ay,az)))/(2*3.1415));
-	z[0] = 360.0*(asin(ay/magnitude(ay,az)))/(2*3.1415);
-	//chprintf((BaseSequentialStream*)&SD1,"deg %.2f ",360.0*(asin(ay/magnitude(ay,az)))/(2*3.1415));
-
-	gx = ((int16_t)(spi_read(&std_spicfg2,0x29)<<8|spi_read(&std_spicfg2,0x28))) * g_lsb;
-
-
-	//gy = ((int16_t)(spi_read(&std_spicfg2,0x2b)<<8|spi_read(&std_spicfg2,0x2a)))* g_lsb;
-
-	//gz = ((int16_t)(spi_read(&std_spicfg2,0x2d)<<8|spi_read(&std_spicfg2,0x2c))) * g_lsb;
-
-	if (az < 0)
-	    gx = gx*-1.0;
-
-	z[1] = gx;
-	//chprintf((BaseSequentialStream*)&SD1,"Z %f,%f\r\n",z[0],z[1]);
-	//x = F*x ;
-	mmult(&EYE3,mmult(&F,&x,&result1,3,3,3,1),&x,3,3,3,1);
-	//print_matrix(&x,3,1,"xdot");
-	//print_matrix(&z,2,1,"z");
-	// P=(F*P*F') +Q
-	//print_matrix(&F,3,3,"F");
-	mmult(&F,&P,&result1,3,3,3,3);
-	//print_matrix(&result1,3,3,"F*P");
-	transpose(&F,&result2,3,3);
-	//print_matrix(&result2,3,3,"F'");
-	mmult(&result1,&result2,&result3,3,3,3,3);
-	//print_matrix(&result3,3,3,"F*P*F'");
-	madd(&result3,&Q,&P,3,3);
-	//print_matrix(&P,3,3,"F*P*F' + Q");
-	
-	// K = P*H'*(H*P*H' +R)^-1;
-	//---------------------------
-	// result1 = P*H' result2 = H'
-	mmult(&P,transpose(&H,result2,2,3),&result1,3,3,3,2);
-	//print_matrix(&result1,3,2,"P*H'");
-	//result3= H*P*H' result4 = (H*P*H' +R) result5 = (H*P*H'+R)^-1
-	inversem2(madd(mmult(&H,&result1,&result3,2,3,3,2),&R,&result4,2,2),&result5);
-	//print_matrix(&result3,2,2,"H*P*H'");
-	//print_matrix(&result4,2,2,"(H*P*H'+R)");
-	//print_matrix(&result5,2,2,"(H*P*H'+R)^-1");
-	// K = P*H'*(H*P*H' +R)^-1;
-	mmult(&result1,&result5,&K,3,2,2,2);
-	//print_matrix(&K,3,2,"K");
-
-	
-	//x = x + K*(z-H*x);
-	//---------------
-	//result2 (z-H*x)
-	msub(&z,mmult(&H,&x,&result1,2,3,3,1),&result2,2,1);
-	//result1 = K*(z-H*x)
-	mmult(&K,&result2,&result1,3,2,2,1);
-	//x = x+K*(z-H*x);
-	mmult(&EYE2,madd(&x,&result1,&result3,2,1),&x,2,2,2,1);
-	//print_matrix(&x,3,1,"x");
-	//print_matrix(&P,3,3,"P(2)");
-	//P = (eye(3) - (K * H)) * P;
-	//print_matrix(&K,3,2,"K");
-	//print_matrix(&H,2,3,"H");
-	mmult(&K,&H,&result1,3,2,2,3);
-	//print_matrix(&result1,3,3,"K*H");
-	msub(&EYE3,&result1,&result2,3,3);
-	//print_matrix(&result2,3,3,"EYE3 - K*H");
-	//print_matrix(&P,3,3,"P");
-	mmult(&result2,&P,&result1,3,3,3,3);
-	//print_matrix(&result1,3,3,"(EYE3 - K*H)*P");
-	mmult(&EYE3,&result1,&P,3,3,3,3);
-	//print_matrix(&P,3,3,"P");
-	deg = x[0]*10;
-	deg2 = x[0];
-	speed = x[1];
-	//	chprintf((BaseSequentialStream*)&SD1,"dt: %.4f deg %d orig %.2f, speed: %d\r\n",dt,deg,z[0],speed);
-	chThdSleepMilliseconds(1);
-      }
-
-    
-
-    chThdSleepMilliseconds(1);
-    //siUnselect(&SPID1);
-    // palClearPad(GPIOB, 5);
-    //chThdSleepMilliseconds(100);
-  }
-
-  return MSG_OK;
-    
-}
 
 
 static THD_WORKING_AREA(waThread3, 512);
@@ -535,7 +267,7 @@ static THD_FUNCTION(Thread3, arg) {
   while(TRUE)
       {
 	  
-	  b = sdGetTimeout(&SD2,TIME_MS2I(2));
+	  b = sdGetTimeout(&SD2,TIME_MS2I(3));
 
 	  
 	  if ((b!= Q_TIMEOUT) && (rx_queue_pos < 31))
@@ -560,6 +292,46 @@ static THD_FUNCTION(Thread3, arg) {
 
   return MSG_OK;
 }
+
+
+static THD_WORKING_AREA(waThread5, 512);
+static THD_FUNCTION(Thread5, arg) {
+  (void)arg;
+  int pass = 0;
+  msg_t b = 0;
+
+  chRegSetThreadName("serial2");
+  while(TRUE)
+      {
+	  
+	  b = sdGetTimeout(&SD3,TIME_MS2I(3));
+
+	  
+	  if ((b!= Q_TIMEOUT) && (rx2_queue_pos < 31))
+	      {
+		  //chprintf((BaseSequentialStream*)&SD1,"got char: %x\r\n",b);
+		  rx2_text[rx2_queue_num][rx2_queue_pos++]=b;
+	      }
+	  if ((b == Q_TIMEOUT) && (rx2_queue_pos > 0))
+	      {
+		  rx2_text[rx2_queue_num][rx2_queue_pos] = 0;
+
+		  chMBPostTimeout(&RxMbx2,(rx2_queue_num<<8)|rx2_queue_pos,TIME_INFINITE); // let our mailbox know
+		  rx2_queue_pos = 0;
+		  // we have a new entry
+		  rx2_queue_num = (++rx2_queue_num)%32;
+		  memset(rx2_text[rx2_queue_num],0,5);
+	      }
+	  
+  
+      }
+
+  return MSG_OK;
+}
+
+
+
+
 
 uint8_t decode_pos(char pos)
 {
@@ -649,10 +421,85 @@ static THD_FUNCTION(Thread4, arg) {
 
     }
 
+void requestAngle(){
+    char lcltext[32] = {0x01,0x03,0x00,0x00,0x00,0x02,0xc4,0x0b,0x00,0x00};
+
+    palSetPad(GPIOB,9);
+    sdWrite(&SD3,lcltext,8);
+    while (!(oqIsEmptyI(&(&SD3)->oqueue)))
+	{
+	    
+	    chThdSleepMilliseconds(1);
+	}
+    chThdSleepMilliseconds(2);
+    palClearPad(GPIOB,9);
+    
+}
+
+static THD_WORKING_AREA(waThread6, 2048);
+static THD_FUNCTION(Thread6, arg) {
+    int charnum;
+    int index;
+    msg_t key;
+    int x;
+    char *starttxt;
+    char text[255];
+    char lcltext[32];
+    uint8_t command;
+    int row;
+    int col;
+    int len;
+    msg_t rxRow;
+    msg_t rxPos;
+    msg_t response;
+    uint8_t skip_next;
+    uint16_t reg;
+    uint16_t value;
+
+    while (TRUE)
+	{
+	    // the skip is because the way I have it hooked up right now
+	    // causes it to read whatever we send.
+	    chMBFetchTimeout(&RxMbx2,&rxRow,TIME_INFINITE);
+	    rxPos = rxRow & 0xFF;
+	    rxRow = rxRow >> 8;
+	    memcpy(lcltext,rx2_text[rxRow],rxPos);
+	    // if the message is for us and the CRC matches - otherwise -
+	    // ignore.
+
+            if ((lcltext[0] == 1) &&
+		(*(uint16_t*)(lcltext+rxPos-2) == CRC16(lcltext,rxPos-2)))
+
+		{
+		    currentAngle = lcltext[3]*100+lcltext[4]+lcltext[5]*.01;
+		    currentAngle = currentAngle - 180.0;
+
+		 
+		}
+
+	}
+
+    }
+
+
+
+void adcSTM32EnableTSVREFE(void) {
+    //    ADC12_COMMON->CCR |= ADC12_CCR_VREFEN;
+    ADC34_COMMON->CCR |= ADC34_CCR_VREFEN;
+}
+
+
+float calc_volts(float vdd,int rawread)
+{
+    return (rawread/4095.0)*vdd;
+}
+
+
 
 int main(void) {
   unsigned i;
-
+  float VDD;
+  float amps;
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -667,8 +514,23 @@ int main(void) {
   wdgStart(&WDGD1, &wdgcfg);
   wdgReset(&WDGD1);
   chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
+  chMBObjectInit(&RxMbx2,&RxMbx2Buff,MAILBOX_SIZE);
+  palSetPadMode(GPIOE, 7, PAL_MODE_INPUT_ANALOG);
+
+  adcStart(&ADCD3, NULL);
+  // The referenece voltage enable MUST come after the adcStart 
+  adcSTM32EnableTSVREFE();
 
 
+  palSetPadMode(GPIOE, 5, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPadMode(GPIOE, 6, PAL_MODE_OUTPUT_PUSHPULL);
+  palClearPad(GPIOE,5);
+  palClearPad(GPIOE,6);
+  
+
+
+
+  
   /*
    * SPI1 I/O pins setup.
    */
@@ -677,9 +539,14 @@ int main(void) {
 
   palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));    
   palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));    
+  palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
+
+
+
   palSetPadMode(GPIOB, 5, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOB, 8, PAL_MODE_INPUT_PULLUP);
-  palSetPadMode(GPIOB, 9, PAL_MODE_INPUT_PULLUP);
+  palSetPadMode(GPIOB, 9, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOB, 15, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOB, 14, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOA, 4, PAL_MODE_OUTPUT_PUSHPULL);
@@ -687,13 +554,15 @@ int main(void) {
   palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
   palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
   palClearPad(GPIOA,4);
+  palSetPad(GPIOB,9);
 
-  my_address = my_address | palReadPad(GPIOB,8);
-  my_address = my_address | (palReadPad(GPIOB,9)<<1);
+
+
 
   
   sdStart(&SD1, &uartCfg);
   sdStart(&SD2, &uartCfg2);
+  sdStart(&SD3, &uartCfg2);
     // chprintf((BaseSequentialStream*)&SD2,"Hello World 2\r\n");
   chprintf((BaseSequentialStream*)&SD1,"Hello World - I am # %d\r\n",my_address);
   palSetPadMode(GPIOA, 0, PAL_MODE_OUTPUT_PUSHPULL);
@@ -721,90 +590,74 @@ int main(void) {
   chprintf((BaseSequentialStream*)&SD1,"HelloB\r\n")  ;
   chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, Thread4, NULL);
   chprintf((BaseSequentialStream*)&SD1,"HelloC\r\n")  ;
-  ////chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, Thread5, NULL);
+  
+  chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, Thread5, NULL);
+  chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, Thread6, NULL);
 
-  ////chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, Thread6, NULL);  
   uint32_t x,y;
 
 
 
   
 
-  //chThdSleepMilliseconds(500);
+
   chprintf((BaseSequentialStream*)&SD1,"HelloD\r\n")  ;
 
-  spiAcquireBus(&SPID1);
-  chprintf((BaseSequentialStream*)&SD1,"HelloE\r\n")  ;
-
-  x = spi_read(&std_spicfg2,0x0f);
-  chThdSleepMilliseconds(500);
-  // should be 0xD4
-  chprintf((BaseSequentialStream*)&SD1,"whoami 2  %x\r\n",x);
-  x = spi_read(&std_spicfg1,0x0f);
-  // should be 0x29
-  chprintf((BaseSequentialStream*)&SD1,"whoami 1  %x\r\n",x);
-
-
-  spi_read(&std_spicfg1,0x0f);
-  spi_write(&std_spicfg2,0x20,0xcf);  // enable gyro
-  spi_write(&std_spicfg2,0x23,0x10);  // set 500dps measurement
 
 
 
 
 
   
-  spi_write(&std_spicfg1,0x24,0xf4);  // enable theromometer - magneto @100hz - hi res
-  spi_write(&std_spicfg1,0x20,0x77);  // Read Accel at 100hz
-  spi_write(&std_spicfg1,0x25,0x00);  // set to max 2gauss - best resolution
-  spi_write(&std_spicfg1,0x26,0x00);  // take magneto out of lp mode & set to continuous
-
-  
-  chprintf((BaseSequentialStream*)&SD1,"Point A\r\n");
 
 
-  mmult(&testm2,&testm,&result1,2,3,3,2);
-  //print_matrix(&result1,2,2,"test1");
-  mmult(&testm,&testm2,&result2,3,2,2,3);
-  //print_matrix(&result2,3,3,"test2");
+
   
   
   
   
   chThdSleepMilliseconds(500);
   chprintf((BaseSequentialStream*)&SD1,"\r\n");
-  chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
+  //  chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
 
   chprintf((BaseSequentialStream*)&SD1,"Point B\r\n");
 
 
   while (TRUE)
       {
+	  if (abs(currentAngle) > 30)
+	      {
+		  if (currentAngle > 1){
+		      palClearPad(GPIOE,5);
+		      palSetPad(GPIOE,6);
+		  }
+		  else {
+		      palSetPad(GPIOE,5);
+		      palClearPad(GPIOE,6);
+		  }
+		      
+		      
+	      }
+	  else
+	      {
+		  palClearPad(GPIOE,5);
+		  palClearPad(GPIOE,6);
+	      }
 	  wdgReset(&WDGD1);
+	  // datasheet RM0316 VDDA = 3.3 V ₓ VREFINT_CAL / VREFINT_DATA
+	  // ADC3 wasn't working for vdd - I'm not sure why that is
+	  adcConvert(&ADCD3, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
+
+
+	  chThdSleepMilliseconds(250);
+	  VDD = 3.3 * (*(uint16_t*)0x1FFFF7BA) / (samples1[1] * 1.0);
+	  amps = calc_volts(VDD,samples1[0])/.14;
 	  step = (step +1)%100;
-	  chprintf((BaseSequentialStream*)&SD1,"%d ",step);
-	  chprintf((BaseSequentialStream*)&SD1,"deg %.2f \r\n",deg2);
-	  if ((deg2 < 10) & (deg2 > -10)){
-	      palClearPad(GPIOB,14);
-	      palClearPad(GPIOB,15);
-	  }
-	      
-
-	  if (deg2 > 10){	     
-	      palSetPad(GPIOB,14);
-	      palClearPad(GPIOB,15);
-	  }
-	  if (deg2 < -10){	     
-	      palClearPad(GPIOB,14);
-	      palSetPad(GPIOB,15);
-	  }
-		 
-
-	  chThdSleepMilliseconds(250);
-	  palSetPad(GPIOB, 5);
-	  chThdSleepMilliseconds(250);
+	  chprintf(&SD1,"Angle: %.2f amps: %.2f volts %.2f\r\n",currentAngle,amps,VDD);
+	  requestAngle();
+	  chThdSleepMilliseconds(500);
 	  
-	  palClearPad(GPIOB, 5);
+
    }
 
 
