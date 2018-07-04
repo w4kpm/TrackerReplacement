@@ -66,6 +66,9 @@ static uint16_t stopDeg = 430;
 static uint16_t stoptime = 20;
 static uint16_t running;
 static uint8_t startMove;
+static uint8_t eastLimit;
+static uint8_t westLimit;
+
 static uint8_t goingEast;
 static uint8_t goingWest;
 
@@ -594,6 +597,8 @@ int main(void) {
   // The referenece voltage enable MUST come after the adcStart 
   adcSTM32EnableTSVREFE();
 
+  palSetPadMode(GPIOE, 3, PAL_MODE_INPUT_PULLUP);
+  palSetPadMode(GPIOE, 4, PAL_MODE_INPUT_PULLUP);
 
   palSetPadMode(GPIOE, 5, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOE, 6, PAL_MODE_OUTPUT_PUSHPULL);
@@ -702,9 +707,13 @@ int main(void) {
 
 	  wdgReset(&WDGD1);
 
+	  westLimit = !(palReadPad(GPIOE,3));
+	  eastLimit = !(palReadPad(GPIOE,4));
+	  
 	  if (error){
 	      stopTracker();
 	  }
+	  
 	  if (goingEast && (currentAngle > setPoint)){
 	      stopTracker();
 	  }
@@ -750,6 +759,16 @@ int main(void) {
 	      error=4;
 	      stopTracker();
 	  }
+
+	  if (goingEast && eastLimit){
+	      error=5;
+	      stopTracker();
+	  }
+	  if (goingWest && westLimit){
+	      error=6;
+	      stopTracker();
+	  }
+		  
 	      
 
 
@@ -762,7 +781,7 @@ int main(void) {
 	  VDD = 3.3 * (*(uint16_t*)0x1FFFF7BA) / (samples1[1] * 1.0);
 	  currentAmps = calc_volts(VDD,samples1[0])/.14;
 	  step = (step +1)%100;
-	  chprintf(&SD1,"Angle:%.2f amps:%.2f volts%.2f setPoint:%.2f startMove:%d run:%d strain:%d stall:%d error:%d E:%d W:%d\r\n",currentAngle,currentAmps,VDD,setPoint,startMove,running,strainSeconds,stallSeconds,error,goingEast,goingWest);
+	  chprintf(&SD1,"Angle:%.2f amps:%.2f volts%.2f setPoint:%.2f startMove:%d run:%d strain:%d stall:%d error:%d E:%d W:%d EL:%d WL:%d\r\n",currentAngle,currentAmps,VDD,setPoint,startMove,running,strainSeconds,stallSeconds,error,goingEast,goingWest,eastLimit,westLimit);
 	  speed = floor(currentAngle*10 - lastAngle*10);
 	  deg = floor(currentAngle*10);
 
