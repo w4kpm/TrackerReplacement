@@ -33,14 +33,55 @@
 #define ADC_GRP1_NUM_CHANNELS   2
 
 #define ADC_GRP1_BUF_DEPTH      1
+size_t nx = 0, ny = 0;
 
 static adcsample_t samples1[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
+static uint8_t txbuf[10];
+static uint8_t rxbuf[10];
+static uint8_t step;
+static float currentAngle;
+static float currentAmps;
+static float lastAngle;
+static float setPoint;
+
+static mailbox_t RxMbx;
+#define MAILBOX_SIZE 25
+static msg_t RxMbxBuff[MAILBOX_SIZE];
+
+static mailbox_t RxMbx2;
+static msg_t RxMbx2Buff[MAILBOX_SIZE];
+
+
+
+static uint16_t stallSeconds =0;
+static uint16_t strainSeconds =0;
+static int16_t deg,speed,setpoint =0;
+static uint16_t speedThresh = 5;  // threshold to tell if it is moving or not
+static uint16_t fastAmpsThresh = 100;  // threshold to tell if it is moving or not
+static uint16_t slowAmpsThresh = 80;  // threshold to tell if it is moving or not
+static uint16_t error;
+static uint16_t hysterisisDeg = 20; // these are in integers so that we can
+                                    // maybe set them via modbus later
+static uint16_t stopDeg = 430;
+static uint16_t stoptime = 20;
+static uint16_t running;
+static uint8_t startMove;
+static uint8_t goingEast;
+static uint8_t goingWest;
+
+static double deg2;
+static char rx_text[32][32];
+static char rx2_text[32][32];
+static int rx_queue_pos=0;
+static int rx_queue_num=0;
+static int rx2_queue_pos=0;
+static int rx2_queue_num=0;
+
+static uint8_t my_address = 0x10;
 
 
 
 
-
-size_t nx = 0, ny = 0;
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
 
   (void)adcp;
@@ -104,20 +145,8 @@ static const SPIConfig std_spicfg1 = {
   SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0                    /*CR2 register*/
 };
 
-static const SPIConfig std_spicfg2 = {
-  NULL,
-  NULL,
-  GPIOA,                                                        /*port of CS  */
-  GPIOA_PIN1,                                                /*pin of CS   */
-  //  SPI_CR1_CPOL|SPI_CR1_CPHA|		\
-  //SPI_CR1_SPE|SPI_CR1_MSTR,
-  0,
-  SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0                    /*CR2 register*/
-};
 
-static uint8_t txbuf[10];
-static uint8_t rxbuf[10];
-float currentAngle;
+
 uint8_t spi_read(device,location)
 {
 
@@ -148,26 +177,6 @@ void spi_write(device,location,data)
 //static uint8_t vbuf[64][128];
 //static uint8_t vbuf2[64][128];
 
-static mailbox_t RxMbx;
-#define MAILBOX_SIZE 25
-static msg_t RxMbxBuff[MAILBOX_SIZE];
-
-static mailbox_t RxMbx2;
-static msg_t RxMbx2Buff[MAILBOX_SIZE];
-
-
-static char current_key;
-static  uint16_t step =0;
-static  int16_t deg,speed =0;
-static double deg2;
-static char rx_text[32][32];
-static char rx2_text[32][32];
-static int rx_queue_pos=0;
-static int rx_queue_num=0;
-static int rx2_queue_pos=0;
-static int rx2_queue_num=0;
-
-static uint8_t my_address = 0x10;
 static SerialConfig uartCfg =
 {
     115200,// bit rate
@@ -267,7 +276,7 @@ static THD_FUNCTION(Thread3, arg) {
   while(TRUE)
       {
 	  
-	  b = sdGetTimeout(&SD2,TIME_MS2I(3));
+	  b = sdGetTimeout(&SD2,TIME_MS2I(2));
 
 	  
 	  if ((b!= Q_TIMEOUT) && (rx_queue_pos < 31))
@@ -349,6 +358,7 @@ static THD_FUNCTION(Thread4, arg) {
     char text[255];
     char lcltext[32];
     uint8_t command;
+    float tstFloat = 123.45;
     int row;
     int col;
     int len;
@@ -357,9 +367,10 @@ static THD_FUNCTION(Thread4, arg) {
     msg_t response;
     uint8_t skip_next;
     uint16_t reg;
-    uint16_t value;
+    int16_t value;
     while (TRUE)
 	{
+	    int16_t lclsetpoint;
 	    // the skip is because the way I have it hooked up right now
 	    // causes it to read whatever we send.
 	    chMBFetchTimeout(&RxMbx,&rxRow,TIME_INFINITE);
@@ -375,16 +386,37 @@ static THD_FUNCTION(Thread4, arg) {
 		{
 		    
 		    command = lcltext[1];		
-		    palSetPad(GPIOA,4);
+		    palSetPad(GPIOA,1);
 		    //chprintf((BaseSequentialStream*)&SD1,"+");
+		    reg = (lcltext[2]<<8)|lcltext[3];
+		    if ((command == 4)&&(reg==250))
+			{
+			    lcltext[0] = my_address;
+			    lcltext[1] = 4;
+			    lcltext[2] = 4;
+			    lcltext[3] = ((uint32_t)tstFloat & 0xFF000000 ) >> 24;
+			    lcltext[4] = ((uint32_t)tstFloat & 0xFF0000 ) >> 16;
+			    lcltext[5] = ((uint32_t)tstFloat & 0xFF00 ) >> 8;
+			    lcltext[6] = (uint32_t)tstFloat & 0xFF ;
+
+			    *(uint16_t*)(lcltext+7) = CRC16(lcltext,7);
+			    lcltext[9] = 0;
+			    sdWrite(&SD2,lcltext,9);
+			    
+			}
+
+
 		    if (command == 4)
 			{
-			    reg = (lcltext[2]<<8)|lcltext[3];
+
 			    value = step;
 			    if (reg==1)
 				value = deg;
 			    if (reg==2)
 				value = speed;
+			    if (reg==3)
+				value = setPoint*10.0;
+
 			    lcltext[0] = my_address;
 			    lcltext[1] = 4;
 			    lcltext[2] = 2;
@@ -394,8 +426,21 @@ static THD_FUNCTION(Thread4, arg) {
 			    lcltext[7] = 0;
 			    sdWrite(&SD2,lcltext,7);
 			}
-		    else
-			sdWrite(&SD2,lcltext,rxPos);
+		    if (command == 6)
+			{			    
+			    reg = (lcltext[2]<<8)|lcltext[3];
+			    if (reg==3)
+				{
+				    lclsetpoint = lcltext[4]<<8|lcltext[5];
+				    setPoint = lclsetpoint / 10.0;
+				    startMove = 1;
+				}
+			    sdWrite(&SD2,lcltext,rxPos);
+			}
+
+
+
+			
 		    //chprintf((BaseSequentialStream*)&SD1,"Queue not empty %X %x %x\r\n",SD3.oqueue.q_counter,SD3.oqueue.q_rdptr,SD3.oqueue.q_wrptr);
 		    //chprintf((BaseSequentialStream*)&SD1,"command %d - register %d, %d\r\n",lcltext[1],reg,value);
 		    // I've been having problems with this - setting it too
@@ -410,7 +455,7 @@ static THD_FUNCTION(Thread4, arg) {
 		    }
 
 		    chThdSleepMilliseconds(2);
-		    palClearPad(GPIOA,4);
+		    palClearPad(GPIOA,1);
 		    //chThdSleepMilliseconds(1);
 		    //chprintf((BaseSequentialStream*)&SD1,"-");
 		    //hprintf(&SD1,lcltext);
@@ -494,12 +539,40 @@ float calc_volts(float vdd,int rawread)
     return (rawread/4095.0)*vdd;
 }
 
+void stopTracker(void){
+    palClearPad(GPIOE,5);
+    palClearPad(GPIOE,6);
+    running =0;
+    goingEast =0;
+    goingWest =0;
+}
+
+void goEast(void){
+    palSetPad(GPIOE,5);
+    palClearPad(GPIOE,6);
+    running =1;
+
+    goingEast = 1;
+    goingWest = 0;
+}
+
+void goWest(void){
+    palClearPad(GPIOE,5);
+    palSetPad(GPIOE,6);
+    running =1;
+    goingEast = 0;
+    goingWest = 1;
+
+}
+
+
+
 
 
 int main(void) {
   unsigned i;
   float VDD;
-  float amps;
+
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -524,8 +597,7 @@ int main(void) {
 
   palSetPadMode(GPIOE, 5, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOE, 6, PAL_MODE_OUTPUT_PUSHPULL);
-  palClearPad(GPIOE,5);
-  palClearPad(GPIOE,6);
+  stopTracker();
   
 
 
@@ -549,11 +621,11 @@ int main(void) {
   palSetPadMode(GPIOB, 9, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOB, 15, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOB, 14, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(GPIOA, 4, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPadMode(GPIOA, 1, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
   palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
   palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
-  palClearPad(GPIOA,4);
+  palClearPad(GPIOA,1);
   palSetPad(GPIOB,9);
 
 
@@ -565,15 +637,15 @@ int main(void) {
   sdStart(&SD3, &uartCfg2);
     // chprintf((BaseSequentialStream*)&SD2,"Hello World 2\r\n");
   chprintf((BaseSequentialStream*)&SD1,"Hello World - I am # %d\r\n",my_address);
-  palSetPadMode(GPIOA, 0, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(GPIOA, 1, PAL_MODE_OUTPUT_PUSHPULL);        
+  //  palSetPadMode(GPIOA, 0, PAL_MODE_OUTPUT_PUSHPULL);
+  //palSetPadMode(GPIOA, 1, PAL_MODE_OUTPUT_PUSHPULL);        
 
   //palSetPadMode(GPIOB, 8, PAL_MODE_OUTPUT_PUSHPULL); 
 
   //palClearPad(GPIOB, 8);     /* Green.  */
 
   palSetPad(GPIOA,CS);
-  palSetPad(GPIOA,CS2);
+  //  palSetPad(GPIOA,CS2);
 
 
 
@@ -621,29 +693,66 @@ int main(void) {
   //  chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
 
   chprintf((BaseSequentialStream*)&SD1,"Point B\r\n");
-
-
+  requestAngle();
+  chThdSleepMilliseconds(500);
+  setPoint = lastAngle = currentAngle;
+  
   while (TRUE)
       {
-	  if (abs(currentAngle) > 30)
-	      {
-		  if (currentAngle > 1){
-		      palClearPad(GPIOE,5);
-		      palSetPad(GPIOE,6);
-		  }
-		  else {
-		      palSetPad(GPIOE,5);
-		      palClearPad(GPIOE,6);
-		  }
-		      
-		      
-	      }
-	  else
-	      {
-		  palClearPad(GPIOE,5);
-		  palClearPad(GPIOE,6);
-	      }
+
 	  wdgReset(&WDGD1);
+
+	  if (error){
+	      stopTracker();
+	  }
+	  if (goingEast && (currentAngle > setPoint)){
+	      stopTracker();
+	  }
+	  if (goingWest && (currentAngle < setPoint)){
+	      stopTracker();
+	  }
+
+	  if ((startMove)&&(currentAngle<setPoint)){
+	      startMove = 0;
+	      goEast();
+	  }
+	  if ((startMove)&&(currentAngle>setPoint)){
+	      startMove = 0;
+	      goWest();
+	  }
+	  if (running && (abs(currentAngle) > stopDeg/10.0)){
+	      error = 1;
+	      stopTracker();
+	  }
+	  if (running && (abs(speed) < speedThresh)){
+	      stallSeconds = stallSeconds+1;
+	  }
+	  if (running && (abs(speed) > speedThresh)){
+	      stallSeconds = 0;
+	  }
+	  if (running && (stallSeconds > stoptime)){
+	      error = 2;
+	      stopTracker();
+	  }
+
+	  if (running && (currentAmps*10 > slowAmpsThresh)){
+	      strainSeconds = strainSeconds+1;
+	  }
+	  if (running && (currentAmps*10 < slowAmpsThresh)){
+	      strainSeconds = 0;
+	  }
+	  if (running && (strainSeconds > stoptime)){
+	      error = 3;
+	      stopTracker();
+	  }
+	      
+	  if (running && (currentAmps*10 > fastAmpsThresh)){
+	      error=4;
+	      stopTracker();
+	  }
+	      
+
+
 	  // datasheet RM0316 VDDA = 3.3 V ₓ VREFINT_CAL / VREFINT_DATA
 	  // ADC3 wasn't working for vdd - I'm not sure why that is
 	  adcConvert(&ADCD3, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
@@ -651,9 +760,13 @@ int main(void) {
 
 	  chThdSleepMilliseconds(250);
 	  VDD = 3.3 * (*(uint16_t*)0x1FFFF7BA) / (samples1[1] * 1.0);
-	  amps = calc_volts(VDD,samples1[0])/.14;
+	  currentAmps = calc_volts(VDD,samples1[0])/.14;
 	  step = (step +1)%100;
-	  chprintf(&SD1,"Angle: %.2f amps: %.2f volts %.2f\r\n",currentAngle,amps,VDD);
+	  chprintf(&SD1,"Angle:%.2f amps:%.2f volts%.2f setPoint:%.2f startMove:%d run:%d strain:%d stall:%d error:%d E:%d W:%d\r\n",currentAngle,currentAmps,VDD,setPoint,startMove,running,strainSeconds,stallSeconds,error,goingEast,goingWest);
+	  speed = floor(currentAngle*10 - lastAngle*10);
+	  deg = floor(currentAngle*10);
+
+	  lastAngle = currentAngle;
 	  requestAngle();
 	  chThdSleepMilliseconds(500);
 	  
