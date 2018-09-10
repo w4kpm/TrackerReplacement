@@ -1,4 +1,4 @@
-update=Mon 10 Sep 2018 02:02:53 PM EDT
+update=Mon 10 Sep 2018 02:26:57 PM EDT
 version=1
 last_client=kicad
 [pcbnew]
@@ -23,9 +23,11 @@ ModuleOutlineThickness=0.150000000000
 [cvpcb]
 version=1
 NetIExt=net
+[general]
+version=1
 [eeschema]
 version=1
-LibDir=
+LibDir=../stm32-kicad-lib;../kicad-footprints
 [eeschema/libraries]
 LibName1=power
 LibName2=device
@@ -59,5 +61,5 @@ LibName29=opto
 LibName30=atmel
 LibName31=contrib
 LibName32=valves
-[general]
-version=1
+LibName33=stm32
+LibName34=/home/kelly/TrackerReplacement/KiCad/MyParts
