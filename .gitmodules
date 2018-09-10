@@ -1,3 +1,9 @@
 [submodule "ChibiOS"]
 	path = ChibiOS
 	url = https://github.com/ChibiOS/ChibiOS.git
+[submodule "KiCad/stm32-kicad-lib"]
+	path = KiCad/stm32-kicad-lib
+	url = https://github.com/esden/stm32-kicad-lib.git
+[submodule "KiCad/kicad-footprints"]
+	path = KiCad/kicad-footprints
+	url = https://github.com/KiCad/kicad-footprints.git
