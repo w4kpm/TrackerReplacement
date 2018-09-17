@@ -36,7 +36,7 @@ def readmodbus(modbusid,register,fieldtype,readtype,serialport):
                 #print("..")
                 instrument.close()
                 #print(x)
-                decoder = BinaryPayloadDecoder.fromRegisters(x.registers, endian=Endian.Little)
+                decoder = BinaryPayloadDecoder.fromRegisters(x.registers,byteorder=Endian.Big)
                 if fieldtype == 'slong':
                     x = decoder.decode_32bit_int()
                 if fieldtype == 'long':
@@ -63,7 +63,7 @@ def readmodbus(modbusid,register,fieldtype,readtype,serialport):
 def change_tracker_setpoint(modbusid,serialport,setpoint):
     instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
 
-    builder = BinaryPayloadBuilder(endian=Endian.Big)
+    builder = BinaryPayloadBuilder(byteorder=Endian.Big)
 
     builder.add_16bit_int(setpoint)
     payload = builder.build()
@@ -80,6 +80,28 @@ def change_tracker_setpoint(modbusid,serialport,setpoint):
 
 
 
+def reset_tracker_error(modbusid,serialport,setpoint):
+    instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
+
+    builder = BinaryPayloadBuilder(byteorder=Endian.Big)
+
+    builder.add_16bit_int(setpoint)
+    payload = builder.build()
+    #print(payload)
+
+    #print(payload[0][0])
+    #print(payload[0][1])
+    
+    pld = payload[0][1]|(payload[0][0]<<8)
+    
+    instrument.connect()
+    instrument.write_register(4,pld,unit=modbusid,timeout=.1)
+    instrument.close()
+
+
+
 print(readmodbus(16,3,'sint',4,'/dev/ttyUSB1'))
-change_tracker_setpoint(16,'/dev/ttyUSB1',-250)
+reset_tracker_error(16,'/dev/ttyUSB1',0)
+change_tracker_setpoint(16,'/dev/ttyUSB1',400)
+
 print(readmodbus(16,250,'float',4,'/dev/ttyUSB1'))

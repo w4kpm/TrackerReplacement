@@ -56,7 +56,7 @@ static msg_t RxMbx2Buff[MAILBOX_SIZE];
 static uint16_t stallSeconds =0;
 static uint16_t strainSeconds =0;
 static int16_t deg,speed,setpoint =0;
-static uint16_t speedThresh = 5;  // threshold to tell if it is moving or not
+static uint16_t speedThresh = 2;  // threshold to tell if it is moving or not
 static uint16_t fastAmpsThresh = 100;  // threshold to tell if it is moving or not
 static uint16_t slowAmpsThresh = 80;  // threshold to tell if it is moving or not
 static uint16_t error;
@@ -438,6 +438,13 @@ static THD_FUNCTION(Thread4, arg) {
 				    setPoint = lclsetpoint / 10.0;
 				    startMove = 1;
 				}
+			    if (reg==4)
+				{
+				    
+				    error = 0;
+				    
+				}
+
 			    sdWrite(&SD2,lcltext,rxPos);
 			}
 
@@ -729,10 +736,15 @@ int main(void) {
 	      startMove = 0;
 	      goWest();
 	  }
-	  if (running && (abs(currentAngle) > stopDeg/10.0)){
+	  if (goingWest && (currentAngle < -stopDeg/10.0)){
 	      error = 1;
 	      stopTracker();
 	  }
+	  if (goingEast && (currentAngle > stopDeg/10.0)){
+	      error = 1;
+	      stopTracker();
+	  }
+
 	  if (running && (abs(speed) < speedThresh)){
 	      stallSeconds = stallSeconds+1;
 	  }

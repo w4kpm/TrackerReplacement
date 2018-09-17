@@ -7,3 +7,6 @@
 [submodule "KiCad/kicad-footprints"]
 	path = KiCad/kicad-footprints
 	url = https://github.com/KiCad/kicad-footprints.git
+[submodule "KiCad/digikey-kicad-library"]
+	path = KiCad/digikey-kicad-library
+	url = https://github.com/digikey/digikey-kicad-library.git
