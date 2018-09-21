@@ -1,0 +1,209 @@
+EESchema Schematic File Version 4
+LIBS:BackPanel-cache
+EELAYER 26 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 5 5
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L MyParts:VNH5019 U?
+U 1 1 5BA265B2
+P 1650 1900
+AR Path="/5BA265B2" Ref="U?"  Part="1" 
+AR Path="/5BA26507/5BA265B2" Ref="U5"  Part="1" 
+F 0 "U5" H 1664 1185 50  0000 C CNN
+F 1 "VNH5019" H 1664 1276 50  0000 C CNN
+F 2 "footprints:Pololu VNH5019 Breakout" H 1650 1900 50  0001 C CNN
+F 3 "" H 1650 1900 50  0001 C CNN
+	1    1650 1900
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:+24V #PWR?
+U 1 1 5BA265B9
+P 2400 1550
+AR Path="/5BA265B9" Ref="#PWR?"  Part="1" 
+AR Path="/5BA26507/5BA265B9" Ref="#PWR024"  Part="1" 
+F 0 "#PWR024" H 2400 1400 50  0001 C CNN
+F 1 "+24V" V 2415 1678 50  0000 L CNN
+F 2 "" H 2400 1550 50  0001 C CNN
+F 3 "" H 2400 1550 50  0001 C CNN
+	1    2400 1550
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3.3V #PWR?
+U 1 1 5BA265BF
+P 2400 1750
+AR Path="/5BA265BF" Ref="#PWR?"  Part="1" 
+AR Path="/5BA26507/5BA265BF" Ref="#PWR025"  Part="1" 
+F 0 "#PWR025" H 2400 1600 50  0001 C CNN
+F 1 "+3.3V" V 2415 1878 50  0000 L CNN
+F 2 "" H 2400 1750 50  0001 C CNN
+F 3 "" H 2400 1750 50  0001 C CNN
+	1    2400 1750
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2400 1550 2200 1550
+Wire Wire Line
+	2200 1750 2400 1750
+Wire Wire Line
+	2200 1450 2850 1450
+Wire Wire Line
+	2850 1650 2200 1650
+$Comp
+L power:GND #PWR?
+U 1 1 5BA265CA
+P 2850 1450
+AR Path="/5BA265CA" Ref="#PWR?"  Part="1" 
+AR Path="/5BA26507/5BA265CA" Ref="#PWR027"  Part="1" 
+F 0 "#PWR027" H 2850 1200 50  0001 C CNN
+F 1 "GND" V 2855 1322 50  0000 R CNN
+F 2 "" H 2850 1450 50  0001 C CNN
+F 3 "" H 2850 1450 50  0001 C CNN
+	1    2850 1450
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+3.3V #PWR?
+U 1 1 5BA265D3
+P 2400 2150
+AR Path="/5BA265D3" Ref="#PWR?"  Part="1" 
+AR Path="/5BA26507/5BA265D3" Ref="#PWR026"  Part="1" 
+F 0 "#PWR026" H 2400 2000 50  0001 C CNN
+F 1 "+3.3V" V 2415 2278 50  0000 L CNN
+F 2 "" H 2400 2150 50  0001 C CNN
+F 3 "" H 2400 2150 50  0001 C CNN
+	1    2400 2150
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2200 2150 2400 2150
+$Comp
+L stm32:STM32F303V(B-C)Tx_u U1
+U 5 1 5BA274CD
+P 8550 1800
+F 0 "U1" H 6921 1759 50  0000 R CNN
+F 1 "STM32F303V(B-C)Tx_u" H 6921 1850 50  0000 R CNN
+F 2 "Package_QFP:LQFP-100_14x14mm_P0.5mm" H 6921 1941 50  0000 R CIN
+F 3 "" H 8550 1800 50  0000 C CNN
+	5    8550 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L stm32:STM32F303V(B-C)Tx_u U1
+U 6 1 5BA2755C
+P 8650 4000
+F 0 "U1" H 8756 3343 50  0000 C CNN
+F 1 "STM32F303V(B-C)Tx_u" H 8756 3434 50  0000 C CNN
+F 2 "Package_QFP:LQFP-100_14x14mm_P0.5mm" H 8756 3525 50  0000 C CIN
+F 3 "" H 8650 4000 50  0000 C CNN
+	6    8650 4000
+	-1   0    0    1   
+$EndComp
+NoConn ~ 2200 1950
+NoConn ~ 2200 2250
+Wire Wire Line
+	2200 2350 4850 2350
+Wire Wire Line
+	4850 2350 4850 2000
+Wire Wire Line
+	4850 2000 6950 2000
+Wire Wire Line
+	6950 2100 3550 2100
+Wire Wire Line
+	3550 2100 3550 1850
+Wire Wire Line
+	3550 1850 2200 1850
+Wire Wire Line
+	2200 2050 3300 2050
+Wire Wire Line
+	3300 2050 3300 1900
+Wire Wire Line
+	3300 1900 6950 1900
+NoConn ~ 6950 1100
+NoConn ~ 6950 1200
+NoConn ~ 6950 1300
+NoConn ~ 6950 1400
+NoConn ~ 6950 1500
+NoConn ~ 6950 1600
+NoConn ~ 6950 1700
+NoConn ~ 6950 1800
+NoConn ~ 6950 2400
+NoConn ~ 6950 2500
+NoConn ~ 6950 2600
+$Comp
+L BackPanel-rescue:Conn_01x03 J10
+U 1 1 5BA2897E
+P 4250 2950
+F 0 "J10" H 4170 2625 50  0000 C CNN
+F 1 "Conn_01x03" H 4170 2716 50  0000 C CNN
+F 2 "TerminalBlock:TerminalBlock_Altech_AK300-3_P5.00mm" H 4250 2950 50  0001 C CNN
+F 3 "" H 4250 2950 50  0001 C CNN
+	1    4250 2950
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR028
+U 1 1 5BA289DD
+P 4600 2850
+F 0 "#PWR028" H 4600 2600 50  0001 C CNN
+F 1 "GND" V 4605 2722 50  0000 R CNN
+F 2 "" H 4600 2850 50  0001 C CNN
+F 3 "" H 4600 2850 50  0001 C CNN
+	1    4600 2850
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	4600 2850 4450 2850
+Wire Wire Line
+	4450 2950 5850 2950
+Wire Wire Line
+	5850 2950 5850 2300
+Wire Wire Line
+	5850 2300 6950 2300
+Wire Wire Line
+	6950 2200 5550 2200
+Wire Wire Line
+	5550 2200 5550 3050
+Wire Wire Line
+	5550 3050 4450 3050
+Text Label 4800 3050 0    50   ~ 0
+EastLimit
+Text Label 4950 2950 0    50   ~ 0
+WestLimit
+Text Label 3600 2350 0    50   ~ 0
+CurrentSense
+Text Label 3800 2100 0    50   ~ 0
+GoEast
+Text Label 3800 1900 0    50   ~ 0
+GoWest
+NoConn ~ 7250 3700
+NoConn ~ 7250 3800
+NoConn ~ 7250 3900
+NoConn ~ 7250 4000
+NoConn ~ 7250 4100
+NoConn ~ 7250 4200
+NoConn ~ 7250 4300
+$Comp
+L power:GND #PWR0101
+U 1 1 5BA5621B
+P 2850 1650
+F 0 "#PWR0101" H 2850 1400 50  0001 C CNN
+F 1 "GND" V 2855 1522 50  0000 R CNN
+F 2 "" H 2850 1650 50  0001 C CNN
+F 3 "" H 2850 1650 50  0001 C CNN
+	1    2850 1650
+	0    -1   -1   0   
+$EndComp
+$EndSCHEMATC

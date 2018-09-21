@@ -1,0 +1,399 @@
+EESchema Schematic File Version 4
+LIBS:BackPanel-cache
+EELAYER 26 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 2 5
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L power:GND #PWR06
+U 1 1 5B9BD74C
+P 3900 850
+F 0 "#PWR06" H 3900 600 50  0001 C CNN
+F 1 "GND" H 3900 700 50  0000 C CNN
+F 2 "" H 3900 850 50  0001 C CNN
+F 3 "" H 3900 850 50  0001 C CNN
+	1    3900 850 
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:GND #PWR012
+U 1 1 5B9BD74D
+P 6550 3500
+F 0 "#PWR012" H 6550 3250 50  0001 C CNN
+F 1 "GND" H 6550 3350 50  0000 C CNN
+F 2 "" H 6550 3500 50  0001 C CNN
+F 3 "" H 6550 3500 50  0001 C CNN
+	1    6550 3500
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3650 3400 3750 3400
+Wire Wire Line
+	6550 3400 6550 3500
+Wire Wire Line
+	3650 3500 4300 3500
+Wire Wire Line
+	3650 3600 4900 3600
+Connection ~ 6550 3500
+Wire Wire Line
+	6550 3700 5750 3700
+Connection ~ 6550 3600
+$Comp
+L power:+3.3V #PWR011
+U 1 1 5B9BD74E
+P 6500 2050
+F 0 "#PWR011" H 6500 1900 50  0001 C CNN
+F 1 "+3.3V" H 6500 2190 50  0000 C CNN
+F 2 "" H 6500 2050 50  0001 C CNN
+F 3 "" H 6500 2050 50  0001 C CNN
+	1    6500 2050
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	3550 1900 6500 1900
+Wire Wire Line
+	6500 1900 6500 2000
+Wire Wire Line
+	3550 2000 3750 2000
+Connection ~ 6500 2000
+Wire Wire Line
+	3550 2100 4300 2100
+Connection ~ 6500 2050
+Wire Wire Line
+	3550 2200 4900 2200
+Connection ~ 6500 2100
+Wire Wire Line
+	6500 2300 5750 2300
+Connection ~ 6500 2200
+NoConn ~ 3900 950 
+$Comp
+L power:+3.3V #PWR07
+U 1 1 5B9BD74F
+P 4050 1100
+F 0 "#PWR07" H 4050 950 50  0001 C CNN
+F 1 "+3.3V" H 4050 1240 50  0000 C CNN
+F 2 "" H 4050 1100 50  0001 C CNN
+F 3 "" H 4050 1100 50  0001 C CNN
+	1    4050 1100
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	3900 1050 4050 1050
+Wire Wire Line
+	4050 1050 4050 1100
+Wire Wire Line
+	4050 1150 3900 1150
+Connection ~ 4050 1100
+$Comp
+L BackPanel-rescue:CP1 C8
+U 1 1 5B9BD752
+P 5600 5100
+F 0 "C8" H 5625 5200 50  0000 L CNN
+F 1 "100uF" H 5625 5000 50  0000 L CNN
+F 2 "Capacitor_SMD:CP_Elec_5x5.3" H 5600 5100 50  0001 C CNN
+F 3 "" H 5600 5100 50  0001 C CNN
+	1    5600 5100
+	-1   0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C?
+U 1 1 5B9BD753
+P 3750 2800
+AR Path="/5B9BD753" Ref="C?"  Part="1" 
+AR Path="/5B9BD512/5B9BD753" Ref="C1"  Part="1" 
+F 0 "C1" H 3775 2900 50  0000 L CNN
+F 1 "1uF" H 3775 2700 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 3788 2650 50  0001 C CNN
+F 3 "" H 3750 2800 50  0001 C CNN
+	1    3750 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C?
+U 1 1 5B9BD754
+P 4000 2800
+AR Path="/5B9BD754" Ref="C?"  Part="1" 
+AR Path="/5B9BD512/5B9BD754" Ref="C2"  Part="1" 
+F 0 "C2" H 4025 2900 50  0000 L CNN
+F 1 ".1uF" H 4025 2700 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 4038 2650 50  0001 C CNN
+F 3 "" H 4000 2800 50  0001 C CNN
+	1    4000 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C?
+U 1 1 5B9BD755
+P 4300 2800
+AR Path="/5B9BD755" Ref="C?"  Part="1" 
+AR Path="/5B9BD512/5B9BD755" Ref="C3"  Part="1" 
+F 0 "C3" H 4325 2900 50  0000 L CNN
+F 1 "1uF" H 4325 2700 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 4338 2650 50  0001 C CNN
+F 3 "" H 4300 2800 50  0001 C CNN
+	1    4300 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C?
+U 1 1 5B9BD756
+P 4550 2800
+AR Path="/5B9BD756" Ref="C?"  Part="1" 
+AR Path="/5B9BD512/5B9BD756" Ref="C4"  Part="1" 
+F 0 "C4" H 4575 2900 50  0000 L CNN
+F 1 ".1uF" H 4575 2700 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 4588 2650 50  0001 C CNN
+F 3 "" H 4550 2800 50  0001 C CNN
+	1    4550 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C?
+U 1 1 5B9BD757
+P 4900 2800
+AR Path="/5B9BD757" Ref="C?"  Part="1" 
+AR Path="/5B9BD512/5B9BD757" Ref="C5"  Part="1" 
+F 0 "C5" H 4925 2900 50  0000 L CNN
+F 1 "1uF" H 4925 2700 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 4938 2650 50  0001 C CNN
+F 3 "" H 4900 2800 50  0001 C CNN
+	1    4900 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C?
+U 1 1 5B9BD758
+P 5200 2800
+AR Path="/5B9BD758" Ref="C?"  Part="1" 
+AR Path="/5B9BD512/5B9BD758" Ref="C6"  Part="1" 
+F 0 "C6" H 5225 2900 50  0000 L CNN
+F 1 ".1uF" H 5225 2700 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 5238 2650 50  0001 C CNN
+F 3 "" H 5200 2800 50  0001 C CNN
+	1    5200 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C?
+U 1 1 5B9BD759
+P 5450 2800
+AR Path="/5B9BD759" Ref="C?"  Part="1" 
+AR Path="/5B9BD512/5B9BD759" Ref="C7"  Part="1" 
+F 0 "C7" H 5475 2900 50  0000 L CNN
+F 1 "1uF" H 5475 2700 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 5488 2650 50  0001 C CNN
+F 3 "" H 5450 2800 50  0001 C CNN
+	1    5450 2800
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C?
+U 1 1 5B9BD75A
+P 5750 2800
+AR Path="/5B9BD75A" Ref="C?"  Part="1" 
+AR Path="/5B9BD512/5B9BD75A" Ref="C9"  Part="1" 
+F 0 "C9" H 5775 2900 50  0000 L CNN
+F 1 ".1uF" H 5775 2700 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 5788 2650 50  0001 C CNN
+F 3 "" H 5750 2800 50  0001 C CNN
+	1    5750 2800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3750 2650 3750 2000
+Connection ~ 3750 2000
+Wire Wire Line
+	3750 2950 3750 3400
+Connection ~ 3750 3400
+Wire Wire Line
+	4000 2650 4000 2000
+Connection ~ 4000 2000
+Wire Wire Line
+	4000 2950 4000 3400
+Connection ~ 4000 3400
+Wire Wire Line
+	4300 2650 4300 2100
+Connection ~ 4300 2100
+Wire Wire Line
+	4300 2950 4300 3500
+Connection ~ 4300 3500
+Wire Wire Line
+	4550 2650 4550 2100
+Connection ~ 4550 2100
+Wire Wire Line
+	4550 2950 4550 3500
+Connection ~ 4550 3500
+Wire Wire Line
+	4900 2650 4900 2200
+Connection ~ 4900 2200
+Wire Wire Line
+	4900 2950 4900 3600
+Connection ~ 4900 3600
+Wire Wire Line
+	5200 2650 5200 2200
+Connection ~ 5200 2200
+Wire Wire Line
+	5200 2950 5200 3600
+Connection ~ 5200 3600
+Wire Wire Line
+	5450 2650 5450 2300
+Connection ~ 5450 2300
+Wire Wire Line
+	5450 2950 5450 3700
+Connection ~ 5450 3700
+Wire Wire Line
+	5750 2650 5750 2300
+Connection ~ 5750 2300
+Wire Wire Line
+	5750 2950 5750 3700
+Connection ~ 5750 3700
+Wire Wire Line
+	6550 3500 6550 3600
+Wire Wire Line
+	6550 3600 6550 3700
+Wire Wire Line
+	6500 2000 6500 2050
+Wire Wire Line
+	6500 2050 6500 2100
+Wire Wire Line
+	6500 2100 6500 2200
+Wire Wire Line
+	6500 2200 6500 2300
+Wire Wire Line
+	4050 1100 4050 1150
+Wire Wire Line
+	3750 2000 4000 2000
+Wire Wire Line
+	3750 3400 4000 3400
+Wire Wire Line
+	4000 2000 6500 2000
+Wire Wire Line
+	4000 3400 6550 3400
+Wire Wire Line
+	4300 2100 4550 2100
+Wire Wire Line
+	4300 3500 4550 3500
+Wire Wire Line
+	4550 2100 6500 2100
+Wire Wire Line
+	4550 3500 6550 3500
+Wire Wire Line
+	4900 2200 5200 2200
+Wire Wire Line
+	4900 3600 5200 3600
+Wire Wire Line
+	5200 2200 6500 2200
+Wire Wire Line
+	5200 3600 6550 3600
+Wire Wire Line
+	5450 2300 3550 2300
+Wire Wire Line
+	5450 3700 3650 3700
+Wire Wire Line
+	5750 2300 5450 2300
+Wire Wire Line
+	5750 3700 5450 3700
+$Comp
+L power:+24V #PWR08
+U 1 1 5BA150A0
+P 4100 4800
+F 0 "#PWR08" H 4100 4650 50  0001 C CNN
+F 1 "+24V" V 4115 4928 50  0000 L CNN
+F 2 "" H 4100 4800 50  0001 C CNN
+F 3 "" H 4100 4800 50  0001 C CNN
+	1    4100 4800
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Regulator_Switching:R-78B3.3-2.0 U2
+U 1 1 5BA15271
+P 4750 4800
+F 0 "U2" H 4750 5042 50  0000 C CNN
+F 1 "R-78B3.3-2.0" H 4750 4951 50  0000 C CNN
+F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 4800 4550 50  0001 L CIN
+F 3 "https://www.recom-power.com/pdf/Innoline/R-78Bxx-2.0.pdf" H 4750 4800 50  0001 C CNN
+	1    4750 4800
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR09
+U 1 1 5BA15375
+P 4750 5350
+F 0 "#PWR09" H 4750 5100 50  0001 C CNN
+F 1 "GND" H 4755 5177 50  0000 C CNN
+F 2 "" H 4750 5350 50  0001 C CNN
+F 3 "" H 4750 5350 50  0001 C CNN
+	1    4750 5350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR010
+U 1 1 5BA15412
+P 5950 4800
+F 0 "#PWR010" H 5950 4650 50  0001 C CNN
+F 1 "+3.3V" V 5965 4928 50  0000 L CNN
+F 2 "" H 5950 4800 50  0001 C CNN
+F 3 "" H 5950 4800 50  0001 C CNN
+	1    5950 4800
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	4100 4800 4450 4800
+Wire Wire Line
+	4750 5100 4750 5250
+Wire Wire Line
+	5600 5250 4750 5250
+Connection ~ 4750 5250
+Wire Wire Line
+	4750 5250 4750 5350
+Wire Wire Line
+	5050 4800 5600 4800
+Wire Wire Line
+	5600 4950 5600 4800
+Connection ~ 5600 4800
+Wire Wire Line
+	5600 4800 5950 4800
+$Comp
+L stm32:STM32F303V(B-C)Tx_u U1
+U 7 1 5BA55D93
+P 3400 1050
+F 0 "U1" H 3555 1607 50  0000 C CNN
+F 1 "STM32F303V(B-C)Tx_u" H 3555 1516 50  0000 C CNN
+F 2 "Package_QFP:LQFP-100_14x14mm_P0.5mm" H 3555 1425 50  0000 C CIN
+F 3 "" H 3400 1050 50  0000 C CNN
+	7    3400 1050
+	1    0    0    -1  
+$EndComp
+$Comp
+L stm32:STM32F303V(B-C)Tx_u U1
+U 9 1 5BA55DFC
+P 3050 2100
+F 0 "U1" H 3205 2657 50  0000 C CNN
+F 1 "STM32F303V(B-C)Tx_u" H 3205 2566 50  0000 C CNN
+F 2 "Package_QFP:LQFP-100_14x14mm_P0.5mm" H 3205 2475 50  0000 C CIN
+F 3 "" H 3050 2100 50  0000 C CNN
+	9    3050 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L stm32:STM32F303V(B-C)Tx_u U1
+U 8 1 5BA55F89
+P 3050 3600
+F 0 "U1" H 3205 4157 50  0000 C CNN
+F 1 "STM32F303V(B-C)Tx_u" H 3205 4066 50  0000 C CNN
+F 2 "Package_QFP:LQFP-100_14x14mm_P0.5mm" H 3205 3975 50  0000 C CIN
+F 3 "" H 3050 3600 50  0000 C CNN
+	8    3050 3600
+	1    0    0    -1  
+$EndComp
+$EndSCHEMATC

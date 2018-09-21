@@ -1,0 +1,507 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:switches
+LIBS:relays
+LIBS:motors
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:stm32
+LIBS:MyParts
+LIBS:FrontPanel-cache
+EELAYER 25 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 3 5
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text HLabel 1700 1750 0    60   Input ~ 0
+TX_en
+Text HLabel 1700 1950 0    60   Input ~ 0
+TX
+Text HLabel 1700 2150 0    60   Input ~ 0
+RX
+$Comp
+L SN65HV7X U?
+U 1 1 5B9BE18C
+P 5800 2100
+F 0 "U?" H 5800 2150 60  0000 C CNN
+F 1 "SN65HV7X" H 5800 2050 60  0000 C CNN
+F 2 "Housings_SOIC:SO-8_5.3x6.2mm_Pitch1.27mm" H 5800 2100 60  0001 C CNN
+F 3 "" H 5800 2100 60  0000 C CNN
+	1    5800 2100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1700 1750 2250 1750
+Wire Wire Line
+	2250 1750 2250 3750
+Wire Wire Line
+	2250 3750 5600 3750
+Wire Wire Line
+	5600 3750 5600 2800
+Wire Wire Line
+	5600 2800 5900 2800
+Wire Wire Line
+	1700 1950 2500 1950
+Wire Wire Line
+	2500 1950 2500 4100
+Wire Wire Line
+	2500 4100 6150 4100
+Wire Wire Line
+	6150 4100 6150 2800
+Wire Wire Line
+	1700 2150 2700 2150
+Wire Wire Line
+	2700 2150 2700 3550
+Wire Wire Line
+	2700 3550 5400 3550
+Wire Wire Line
+	5400 3550 5400 2800
+$Comp
+L +3.3V #PWR?
+U 1 1 5B9BE18D
+P 5400 900
+F 0 "#PWR?" H 5400 750 50  0001 C CNN
+F 1 "+3.3V" H 5400 1040 50  0000 C CNN
+F 2 "" H 5400 900 50  0001 C CNN
+F 3 "" H 5400 900 50  0001 C CNN
+	1    5400 900 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6150 900  6150 1450
+$Comp
+L GND #PWR?
+U 1 1 5B9BE18E
+P 6150 900
+F 0 "#PWR?" H 6150 650 50  0001 C CNN
+F 1 "GND" H 6150 750 50  0000 C CNN
+F 2 "" H 6150 900 50  0001 C CNN
+F 3 "" H 6150 900 50  0001 C CNN
+	1    6150 900 
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5400 900  5400 1450
+$Comp
+L C C?
+U 1 1 5B9BE18F
+P 5750 1000
+F 0 "C?" H 5775 1100 50  0000 L CNN
+F 1 ".1u" H 5775 900 50  0000 L CNN
+F 2 "Capacitors_SMD:C_1206" H 5788 850 50  0001 C CNN
+F 3 "" H 5750 1000 50  0001 C CNN
+	1    5750 1000
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5400 1000 5600 1000
+Connection ~ 5400 1000
+Wire Wire Line
+	5900 1000 6150 1000
+Connection ~ 6150 1000
+$Comp
+L D_TVS_x2_AAC D?
+U 1 1 5B9BE190
+P 7700 1450
+F 0 "D?" H 7700 1625 50  0000 C CNN
+F 1 "D_TVS_x2_AAC" H 7700 1550 50  0000 C CNN
+F 2 "TO_SOT_Packages_SMD:SOT-23_Handsoldering" H 7550 1450 50  0001 C CNN
+F 3 "" H 7550 1450 50  0001 C CNN
+	1    7700 1450
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R R?
+U 1 1 5B9BE191
+P 7050 1100
+F 0 "R?" V 7130 1100 50  0000 C CNN
+F 1 "10" V 7050 1100 50  0000 C CNN
+F 2 "Resistors_SMD:R_1812_HandSoldering" V 6980 1100 50  0001 C CNN
+F 3 "" H 7050 1100 50  0001 C CNN
+	1    7050 1100
+	0    1    1    0   
+$EndComp
+$Comp
+L R R?
+U 1 1 5B9BE192
+P 7050 1800
+F 0 "R?" V 7130 1800 50  0000 C CNN
+F 1 "10" V 7050 1800 50  0000 C CNN
+F 2 "Resistors_SMD:R_1812_HandSoldering" V 6980 1800 50  0001 C CNN
+F 3 "" H 7050 1800 50  0001 C CNN
+	1    7050 1800
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5650 1450 5650 1250
+Wire Wire Line
+	5650 1250 6550 1250
+Wire Wire Line
+	5900 1450 6550 1450
+$Comp
+L Polyfuse_Small F?
+U 1 1 5B9BE193
+P 8250 1100
+F 0 "F?" V 8175 1100 50  0000 C CNN
+F 1 "Polyfuse_Small" V 8325 1100 50  0000 C CNN
+F 2 "Resistors_SMD:R_1812" H 8300 900 50  0001 L CNN
+F 3 "" H 8250 1100 50  0001 C CNN
+	1    8250 1100
+	0    1    1    0   
+$EndComp
+$Comp
+L Polyfuse_Small F?
+U 1 1 5B9BE194
+P 8300 1800
+F 0 "F?" V 8225 1800 50  0000 C CNN
+F 1 "Polyfuse_Small" V 8375 1800 50  0000 C CNN
+F 2 "Resistors_SMD:R_1812" H 8350 1600 50  0001 L CNN
+F 3 "" H 8300 1800 50  0001 C CNN
+	1    8300 1800
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	6550 1250 6550 1100
+Wire Wire Line
+	6550 1100 6900 1100
+Wire Wire Line
+	6550 1450 6550 1800
+Wire Wire Line
+	6550 1800 6900 1800
+Wire Wire Line
+	7200 1100 8150 1100
+Wire Wire Line
+	7200 1800 8200 1800
+Connection ~ 7700 1100
+Connection ~ 7700 1800
+$Comp
+L GND #PWR?
+U 1 1 5B9BE195
+P 7850 1450
+F 0 "#PWR?" H 7850 1200 50  0001 C CNN
+F 1 "GND" H 7850 1300 50  0000 C CNN
+F 2 "" H 7850 1450 50  0001 C CNN
+F 3 "" H 7850 1450 50  0001 C CNN
+	1    7850 1450
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Varistor RV?
+U 1 1 5B9BE196
+P 8900 1400
+F 0 "RV?" V 9025 1400 50  0000 C CNN
+F 1 "Varistor" V 8775 1400 50  0000 C CNN
+F 2 "Resistors_SMD:R_1210" V 8830 1400 50  0001 C CNN
+F 3 "" H 8900 1400 50  0001 C CNN
+	1    8900 1400
+	0    1    1    0   
+$EndComp
+$Comp
+L Varistor RV?
+U 1 1 5B9BE197
+P 8900 1650
+F 0 "RV?" V 9025 1650 50  0000 C CNN
+F 1 "Varistor" V 8775 1650 50  0000 C CNN
+F 2 "Resistors_SMD:R_1210" V 8830 1650 50  0001 C CNN
+F 3 "" H 8900 1650 50  0001 C CNN
+	1    8900 1650
+	0    1    1    0   
+$EndComp
+Text HLabel 9950 1400 2    60   Output Italic 0
+RS485B(+)
+Text HLabel 9950 1650 2    60   Output Italic 0
+RS485A(-)
+Wire Wire Line
+	9050 1400 9950 1400
+Wire Wire Line
+	9050 1650 9950 1650
+Wire Wire Line
+	8350 1100 9350 1100
+Wire Wire Line
+	9350 1100 9350 1400
+Connection ~ 9350 1400
+Wire Wire Line
+	8400 1800 9350 1800
+Wire Wire Line
+	9350 1800 9350 1650
+Connection ~ 9350 1650
+$Comp
+L GND #PWR?
+U 1 1 5B9BE198
+P 8550 1500
+F 0 "#PWR?" H 8550 1250 50  0001 C CNN
+F 1 "GND" H 8550 1350 50  0000 C CNN
+F 2 "" H 8550 1500 50  0001 C CNN
+F 3 "" H 8550 1500 50  0001 C CNN
+	1    8550 1500
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8750 1400 8750 1650
+Wire Wire Line
+	8550 1500 8750 1500
+Connection ~ 8750 1500
+Text HLabel 1600 5300 0    60   Input ~ 0
+AngleTX_en
+Text HLabel 1600 5500 0    60   Input ~ 0
+AngleTX
+Text HLabel 1600 5700 0    60   Input ~ 0
+AngleRX
+$Comp
+L SN65HV7X U?
+U 1 1 5B9BF763
+P 5700 5650
+F 0 "U?" H 5700 5700 60  0000 C CNN
+F 1 "SN65HV7X" H 5700 5600 60  0000 C CNN
+F 2 "Housings_SOIC:SO-8_5.3x6.2mm_Pitch1.27mm" H 5700 5650 60  0001 C CNN
+F 3 "" H 5700 5650 60  0000 C CNN
+	1    5700 5650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1600 5300 2150 5300
+Wire Wire Line
+	2150 5300 2150 7300
+Wire Wire Line
+	2150 7300 5500 7300
+Wire Wire Line
+	5500 7300 5500 6350
+Wire Wire Line
+	5500 6350 5800 6350
+Wire Wire Line
+	1600 5500 2400 5500
+Wire Wire Line
+	2400 5500 2400 7650
+Wire Wire Line
+	2400 7650 6050 7650
+Wire Wire Line
+	6050 7650 6050 6350
+Wire Wire Line
+	1600 5700 2600 5700
+Wire Wire Line
+	2600 5700 2600 7100
+Wire Wire Line
+	2600 7100 5300 7100
+Wire Wire Line
+	5300 7100 5300 6350
+$Comp
+L +3.3V #PWR?
+U 1 1 5B9BF776
+P 5300 4450
+F 0 "#PWR?" H 5300 4300 50  0001 C CNN
+F 1 "+3.3V" H 5300 4590 50  0000 C CNN
+F 2 "" H 5300 4450 50  0001 C CNN
+F 3 "" H 5300 4450 50  0001 C CNN
+	1    5300 4450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6050 4450 6050 5000
+$Comp
+L GND #PWR?
+U 1 1 5B9BF77D
+P 6050 4450
+F 0 "#PWR?" H 6050 4200 50  0001 C CNN
+F 1 "GND" H 6050 4300 50  0000 C CNN
+F 2 "" H 6050 4450 50  0001 C CNN
+F 3 "" H 6050 4450 50  0001 C CNN
+	1    6050 4450
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5300 4450 5300 5000
+$Comp
+L C C?
+U 1 1 5B9BF784
+P 5650 4550
+F 0 "C?" H 5675 4650 50  0000 L CNN
+F 1 ".1u" H 5675 4450 50  0000 L CNN
+F 2 "Capacitors_SMD:C_1206" H 5688 4400 50  0001 C CNN
+F 3 "" H 5650 4550 50  0001 C CNN
+	1    5650 4550
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5300 4550 5500 4550
+Connection ~ 5300 4550
+Wire Wire Line
+	5800 4550 6050 4550
+Connection ~ 6050 4550
+$Comp
+L D_TVS_x2_AAC D?
+U 1 1 5B9BF78E
+P 7600 5000
+F 0 "D?" H 7600 5175 50  0000 C CNN
+F 1 "D_TVS_x2_AAC" H 7600 5100 50  0000 C CNN
+F 2 "TO_SOT_Packages_SMD:SOT-23_Handsoldering" H 7450 5000 50  0001 C CNN
+F 3 "" H 7450 5000 50  0001 C CNN
+	1    7600 5000
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R R?
+U 1 1 5B9BF794
+P 6950 4650
+F 0 "R?" V 7030 4650 50  0000 C CNN
+F 1 "10" V 6950 4650 50  0000 C CNN
+F 2 "Resistors_SMD:R_1812_HandSoldering" V 6880 4650 50  0001 C CNN
+F 3 "" H 6950 4650 50  0001 C CNN
+	1    6950 4650
+	0    1    1    0   
+$EndComp
+$Comp
+L R R?
+U 1 1 5B9BF79A
+P 6950 5350
+F 0 "R?" V 7030 5350 50  0000 C CNN
+F 1 "10" V 6950 5350 50  0000 C CNN
+F 2 "Resistors_SMD:R_1812_HandSoldering" V 6880 5350 50  0001 C CNN
+F 3 "" H 6950 5350 50  0001 C CNN
+	1    6950 5350
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5550 5000 5550 4800
+Wire Wire Line
+	5550 4800 6450 4800
+Wire Wire Line
+	5800 5000 6450 5000
+$Comp
+L Polyfuse_Small F?
+U 1 1 5B9BF7A3
+P 8150 4650
+F 0 "F?" V 8075 4650 50  0000 C CNN
+F 1 "Polyfuse_Small" V 8225 4650 50  0000 C CNN
+F 2 "Resistors_SMD:R_1812" H 8200 4450 50  0001 L CNN
+F 3 "" H 8150 4650 50  0001 C CNN
+	1    8150 4650
+	0    1    1    0   
+$EndComp
+$Comp
+L Polyfuse_Small F?
+U 1 1 5B9BF7A9
+P 8200 5350
+F 0 "F?" V 8125 5350 50  0000 C CNN
+F 1 "Polyfuse_Small" V 8275 5350 50  0000 C CNN
+F 2 "Resistors_SMD:R_1812" H 8250 5150 50  0001 L CNN
+F 3 "" H 8200 5350 50  0001 C CNN
+	1    8200 5350
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	6450 4800 6450 4650
+Wire Wire Line
+	6450 4650 6800 4650
+Wire Wire Line
+	6450 5000 6450 5350
+Wire Wire Line
+	6450 5350 6800 5350
+Wire Wire Line
+	7100 4650 8050 4650
+Wire Wire Line
+	7100 5350 8100 5350
+Connection ~ 7600 4650
+Connection ~ 7600 5350
+$Comp
+L GND #PWR?
+U 1 1 5B9BF7B7
+P 7750 5000
+F 0 "#PWR?" H 7750 4750 50  0001 C CNN
+F 1 "GND" H 7750 4850 50  0000 C CNN
+F 2 "" H 7750 5000 50  0001 C CNN
+F 3 "" H 7750 5000 50  0001 C CNN
+	1    7750 5000
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Varistor RV?
+U 1 1 5B9BF7BD
+P 8800 4950
+F 0 "RV?" V 8925 4950 50  0000 C CNN
+F 1 "Varistor" V 8675 4950 50  0000 C CNN
+F 2 "Resistors_SMD:R_1210" V 8730 4950 50  0001 C CNN
+F 3 "" H 8800 4950 50  0001 C CNN
+	1    8800 4950
+	0    1    1    0   
+$EndComp
+$Comp
+L Varistor RV?
+U 1 1 5B9BF7C3
+P 8800 5200
+F 0 "RV?" V 8925 5200 50  0000 C CNN
+F 1 "Varistor" V 8675 5200 50  0000 C CNN
+F 2 "Resistors_SMD:R_1210" V 8730 5200 50  0001 C CNN
+F 3 "" H 8800 5200 50  0001 C CNN
+	1    8800 5200
+	0    1    1    0   
+$EndComp
+Text HLabel 9850 4950 2    60   Output Italic 0
+AngleRS485B(+)
+Text HLabel 9850 5200 2    60   Output Italic 0
+AngleRS485A(-)
+Wire Wire Line
+	8950 4950 9850 4950
+Wire Wire Line
+	8950 5200 9850 5200
+Wire Wire Line
+	8250 4650 9250 4650
+Wire Wire Line
+	9250 4650 9250 4950
+Connection ~ 9250 4950
+Wire Wire Line
+	8300 5350 9250 5350
+Wire Wire Line
+	9250 5350 9250 5200
+Connection ~ 9250 5200
+$Comp
+L GND #PWR?
+U 1 1 5B9BF7D3
+P 8450 5050
+F 0 "#PWR?" H 8450 4800 50  0001 C CNN
+F 1 "GND" H 8450 4900 50  0000 C CNN
+F 2 "" H 8450 5050 50  0001 C CNN
+F 3 "" H 8450 5050 50  0001 C CNN
+	1    8450 5050
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8650 4950 8650 5200
+Wire Wire Line
+	8450 5050 8650 5050
+Connection ~ 8650 5050
+$EndSCHEMATC
