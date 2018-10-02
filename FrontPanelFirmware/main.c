@@ -40,16 +40,16 @@
 static uint8_t vbuf2[64][128];
 volatile static uint8_t vbuf[64][128];
 static uint8_t txbuf[2];
-
+#define SOMC '@'
 static uint8_t oled_current_row;
 static uint8_t oled_current_column;
-//static char device = '3';
+
 
 static mailbox_t KeyMbx,RxMbx,BeepMbx;
 static binary_semaphore_t Keypressed;
 #define MAILBOX_SIZE 25
 //static msg_t KeyMbxBuff[MAILBOX_SIZE];
-//static msg_t RxMbxBuff[MAILBOX_SIZE];
+static msg_t RxMbxBuff[MAILBOX_SIZE];
 //static msg_t BeepMbxBuff[MAILBOX_SIZE];
 static char current_key =255;
 static uint8_t current_row= 4;
@@ -72,7 +72,7 @@ static SerialConfig uartCfg =
 
 static SerialConfig uartCfg2 =
 {
-    9600,// bit rate
+    115200,// bit rate
     0,
     0,
     0,
@@ -213,7 +213,7 @@ void clear_oled()
 {
 
     //chprintf(&SD1,"Did Clear OLED\r\n");
-    memset(vbuf2,0xff,100); // I set the clear to be 0x11 instead of 0x00
+    memset(vbuf2,0x00,128*64); // I set the clear to be 0x11 instead of 0x00
     
                                // because the LCD would 'freak out' if lots
                                // of null data was sent
@@ -224,7 +224,7 @@ void clear_oled()
 
 void shade_oled(uint8_t shade)
 {
-    memset(vbuf2,shade,128*64);
+    memset(vbuf2,shade,128*10);
 }
 
 
@@ -303,31 +303,15 @@ void graphics_init()
   uint8_t col;
 
 
-  //clear_oled();
-  oled_draw_string(0,3,"Test ");
-  //clear_oled();
-  //oled_draw_string(0,0,"7890 ");
-  //oled_draw_string(5,2,"System ");
-  //oled_draw_string(4,3,"& 4W Alignment ");
-
-
-}
-
-
-void graphics_init2()
-{
-  uint8_t row;
-  uint8_t col;
-
-
   clear_oled();
-  oled_draw_string(0,3,"tEST ");
-  oled_draw_string(0,0,"7890 ");
-  //oled_draw_string(5,2,"System ");
+  oled_draw_string(1,0,"Tracker Replacement ");
+  //clear_oled();
+  oled_draw_string(5,2,"SecureFutures ");
   //oled_draw_string(4,3,"& 4W Alignment ");
 
 
 }
+
 
 
 
@@ -435,152 +419,72 @@ uint8_t decode_pos(char pos)
 }
 
     
-//static THD_WORKING_AREA(waThread4, 2048);
-//static THD_FUNCTION(Thread4, arg) {
-//    int charnum;
-//    int index;
-//    msg_t key;
-//    int x;
-//    char *starttxt;
-//    char text[255];
-//    char lcltext[32];
-//    int row;
-//    int col;
-//    int len;
-//    msg_t rxRow;
-//    msg_t response;
-// 
-//    while (TRUE)
-//	{
-//	
-//	    chMBFetchTimeout(&RxMbx,&rxRow,TIME_INFINITE);
-//
-//
-//	    strncpy(lcltext,rx_text[rxRow],32);
-//	  
-//	    if (lcltext[0] == SOMC && lcltext[1] == device)
-//		{
-//
-//		    if (lcltext[2] == 13)
-//			{
-//			    // rework this part
-//			    response=chMBFetchTimeout(&KeyMbx,&key,TIME_IMMEDIATE);
-//			    if (response == MSG_TIMEOUT)
-//				key = 0x00;
-//
-//
-//			    //chprintf(&SD1,"sending key %x \r\n",key);
-//			    text[0] = '@';
-//			    text[1] = key;
-//			    text[2] = 0x0d;
-//			    palSetPad(GPIOA,1);
-//			    sdWrite(&SD2,&text,3);
-//			    chThdSleepMilliseconds(1);
-//			    palClearPad(GPIOA,1);
-//			    chprintf(&SD1,"%c%2x%2x\r\n",text[0],text[1],text[2]);
-//	      	     
-//			}
-//
-//		    if (lcltext[3] == 'Y' && lcltext[6] == 7)
-//			{
-//			    //sprintf(text,"Beep!\r\n");
-//			    dbg("Beep!\r\n");
-//			    chMBPostTimeout(&BeepMbx,500,TIME_INFINITE); // let our mailbox know
-//			}
-//
-//		    if (lcltext[3] == 'Y' && lcltext[6] != 7)
-//			{
-//			    len = strlen(lcltext+6)-1;
-//			    row=decode_pos(lcltext[4]);
-//			    col=decode_pos(lcltext[5]);
-//			    //memcpy(lcd_screen[row]+col,lcltext+6,len);		 
-//			    oled_draw_string(col,row,lcltext+6);
-//			    chprintf(&SD1,"%d,%d:%s\r\n",row,col,lcltext+6);
-//			}
-//		    if (lcltext[3] == 'E')
-//			{
-//			    //sprintf(text,"*clr*\r\n");
-//			    dbg("*clr*\r\n");			   
-//			    clear_oled();
-//			}
-//		    if (lcltext[3] == 'S')
-//			{
-//			    
-//
-//			    chprintf(&SD1,"*blink-on* %x\r\n",checksum());
-//			    //dbg(text);
-//			    
-//			    //blink_on_lcd();
-//			}
-//		    if (lcltext[3] == 'R')
-//			{
-//			    //sprintf(text,"*blink-off*\r\n");
-//			    dbg("*blink-off*\r\n");	      	    
-//			    //blink_off_lcd();
-//			}
-//		    if (lcltext[3] == 'G')
-//			{
-//			    //sprintf(text,"*underline-off*\r\n");
-//			    dbg("*underline-off\r\n");	      	    
-//			    //underline_off_lcd();
-//			}
-//		    if (lcltext[3] == 'F')
-//			{
-//			    //sprintf(text,"*underline-on*\r\n");
-//			    dbg("*underline-on*\r\n");	      	    
-//			    //underline_on_lcd();
-//			}
-//
-//
-//
-//		}
-//	    //if it's not meant for us, then ignore message.
-//	}
-//
-//    }
-//
-//
-//static THD_WORKING_AREA(waThread5, 128);
-//static THD_FUNCTION(Thread5, arg) {
-//    while (TRUE)
-//	{
-//	    if (! strobe_wait)
-//		{
-//		    //		    chprintf(&SD1,"CurrentRow: %d\r\n",current_row);
-//		    palClearPad(GPIOC,current_row);
-//		    current_row ++;
-//		    if (current_row > 10)
-//			current_row = 4;
-//		    palSetPad(GPIOC,current_row);
-//			
-//		}
-//	    chThdSleepMilliseconds(10);
-//	}
-//}
-//
-//
-//
-//static THD_WORKING_AREA(waThread6, 128);
-//static THD_FUNCTION(Thread6, arg) {
-//    while (TRUE)
-//	{
-//	    chBSemWait(&Keypressed);
-//	    chprintf(&SD1,"GotKeypress: %X,%X\r\n",current_row,current_key);
-//	    
-//	    while (palReadGroup(GPIOC,0xf,0) != 0)
-//		{
-//		    chprintf(&SD1,"GotKeypress: %X\r\n",palReadGroup(GPIOC,0xf,0));		  
-//		    chThdSleepMilliseconds(100);
-//		}
-//	    dbg("Keypress Done\r\n");
-//	    strobe_wait = 0;
-//	}
-//}
-//		
-//
+static THD_WORKING_AREA(waThread4, 2048);
+static THD_FUNCTION(Thread4, arg) {
+    int charnum;
+    int index;
+    msg_t key;
+    int x;
+    char *starttxt;
+    char text[255];
+    char lcltext[32];
+    int row;
+    int col;
+    int len;
+    msg_t rxRow;
+    msg_t response;
+ 
+    while (TRUE)
+	{
+	
+	    chMBFetchTimeout(&RxMbx,&rxRow,TIME_INFINITE);
+
+
+	    strncpy(lcltext,rx_text[rxRow],32);
+	  
+	    if (lcltext[0] == SOMC)
+		{
+
+
+
+		    if (decode_pos(lcltext[1])<4)
+			{
+			    len = strlen(lcltext+6)-1;
+			    row=decode_pos(lcltext[1]);
+			    col=decode_pos(lcltext[2]);
+			    //memcpy(lcd_screen[row]+col,lcltext+6,len);		 
+			    oled_draw_string(col,row,lcltext+3);
+			    chprintf(&SD1,"%d,%d:%s\r\n",row,col,lcltext+3);
+			}
+		    if (decode_pos(lcltext[1]) == 5)
+			{
+			    //sprintf(text,"*clr*\r\n");
+			    dbg("*clr*\r\n");			   
+			    clear_oled();
+			}
+		    if (decode_pos(lcltext[1]) == 4)
+			{
+			    //sprintf(text,"*clr*\r\n");
+			    dbg("*setLight\r\n");
+			    if (lcltext[3] == '0')
+				palClearPad(GPIOC,11+decode_pos(lcltext[2]));
+			    else
+				palSetPad(GPIOC,11+decode_pos(lcltext[2]));
+				    			   
+			}
+		    
+
+
+		}
+	    //if it's not meant for us, then ignore message.
+	}
+
+    }
+
+
 
 int main(void) {
-  unsigned i;
+    unsigned i,x;
   char text[255];
   /*
    * System initializations.
@@ -592,7 +496,7 @@ int main(void) {
   halInit();
   chSysInit();
   //chMBObjectInit(&KeyMbx,&KeyMbxBuff,MAILBOX_SIZE);
-  //chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
+  chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
   //chMBObjectInit(&BeepMbx,&BeepMbxBuff,MAILBOX_SIZE);
   //chBSemObjectInit(&Keypressed,1);
   /*
@@ -601,8 +505,8 @@ int main(void) {
   palSetPadMode(GPIOB, 6, PAL_MODE_ALTERNATE(7));    
   palSetPadMode(GPIOB, 7, PAL_MODE_ALTERNATE(7));
 
-  //palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));    
-  //palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));    
+  palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
   //palSetPadMode(GPIOB, 11, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(GPIOB, 15, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
   palSetPadMode(GPIOB, 13, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
@@ -610,7 +514,7 @@ int main(void) {
   
   sdStart(&SD1, &uartCfg);
     sdStart(&SD2, &uartCfg2);
-    // chprintf((BaseSequentialStream*)&SD2,"Hello World 2\r\n");
+     chprintf((BaseSequentialStream*)&SD2,"Hello World 2\r\n");
   chprintf((BaseSequentialStream*)&SD1,"Hello World 1\r\n");
   chprintf((BaseSequentialStream*)&SD1,"vbuf %X %X\r\n",vbuf,&vbuf2);
   //palSetPadMode(GPIOA, 1, PAL_MODE_OUTPUT_PUSHPULL);        
@@ -647,49 +551,54 @@ int main(void) {
   chprintf((BaseSequentialStream*)&SD1,"SPI init\r\n");
   init_oled();
   chprintf((BaseSequentialStream*)&SD1,"OLED init\r\n");
-  chThdSleepMilliseconds(1000);
+  
   chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
   chprintf((BaseSequentialStream*)&SD1,"start Thread\r\n");
-  chThdSleepMilliseconds(1000);
+  
 
-  //chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, Thread3, NULL);
-  //chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, Thread4, NULL);
-  //chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, Thread5, NULL);
-  strobe_wait = 0;
-  //chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, Thread6, NULL);  
+  chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, Thread3, NULL);
+  chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, Thread4, NULL);
 
 
-
-
-
-  // replace this with dma
-  chprintf((BaseSequentialStream*)&SD1,"start GRAPHICS\r\n");
-  chThdSleepMilliseconds(1000);
-
-  //graphics_init();
-  //chThdSleepMilliseconds(1000);
-  graphics_init2();
+  graphics_init();
   chprintf((BaseSequentialStream*)&SD1,"Point A\r\n");
 
-
+  chThdSleepMilliseconds(2000);    
+  palClearPad(GPIOC, 11);
+  palClearPad(GPIOC, 12);
+  palClearPad(GPIOC, 13);
+  palClearPad(GPIOC, 14);
     
 
-
+  clear_oled();
   while (TRUE)
       {
-	  i = (i +1)%128;
-	    palTogglePad(GPIOC, 11);
-	    palTogglePad(GPIOC, 12);
-	    palTogglePad(GPIOC, 13);
-	    palTogglePad(GPIOC, 14);
-
-	  chprintf((BaseSequentialStream*)&SD1,"spin\r\n");
-	  chThdSleepMilliseconds(1000);
-	  //shade_oled(i);
-	  vbuf2[0][i] = 0x55;
-	  //sprintf(text,"%d",i);
-	  //oled_draw_string(0,0,"1");
-	      
+//	  i = (i +1)%0xff;
+//	    palTogglePad(GPIOC, 11);
+//	    palTogglePad(GPIOC, 12);
+//	    palTogglePad(GPIOC, 13);
+//	    palTogglePad(GPIOC, 14);
+//
+//	  chprintf((BaseSequentialStream*)&SD1,"spin\r\n");
+//	  //
+//	  //shade_oled(i);
+//	  
+//	  sprintf(text,"%x ",i);
+//	  oled_draw_string(0,0,text);
+//	  sprintf(text,"0000000000   ");
+//	  for (x=0;x<10;x++)
+//	      if (palReadPad(GPIOC,x))
+//		  text[x] = '1';
+//	  oled_draw_string(0,1,text);
+//
+//	  sprintf(text,"1111111111   \r\n");
+//	  for (x=0;x<10;x++)
+//	      if (palReadPad(GPIOC,x))
+//		  text[x] = '0';
+//	  chprintf((BaseSequentialStream*)&SD2,text);
+//	  oled_draw_string(0,2,"         1         2 ");
+//	  oled_draw_string(0,3,"1234567890123456789012");
+	  chThdSleepMilliseconds(100);    
    }
 
 
