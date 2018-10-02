@@ -1,6 +1,40 @@
-EESchema Schematic File Version 4
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:switches
+LIBS:relays
+LIBS:motors
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:stm32
+LIBS:MyParts
 LIBS:FrontPanel-cache
-EELAYER 26 0
+EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -15,7 +49,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L stm32:STM32F303V(B-C)Tx_u U1
+L STM32F303V(B-C)Tx_u U1
 U 3 1 5B96DA2A
 P 8600 1600
 F 0 "U1" H 8600 1700 50  0000 C CNN
@@ -26,7 +60,7 @@ F 3 "" H 8600 1600 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L FrontPanel-rescue:R R4
+L R R4
 U 1 1 5B96E9DA
 P 5350 1300
 F 0 "R4" V 5430 1300 50  0000 C CNN
@@ -37,7 +71,7 @@ F 3 "" H 5350 1300 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L FrontPanel-rescue:R R3
+L R R3
 U 1 1 5B96EA31
 P 4900 1200
 F 0 "R3" V 4980 1200 50  0000 C CNN
@@ -48,7 +82,7 @@ F 3 "" H 4900 1200 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L FrontPanel-rescue:R R2
+L R R2
 U 1 1 5B96EA8A
 P 4450 1100
 F 0 "R2" V 4530 1100 50  0000 C CNN
@@ -59,7 +93,7 @@ F 3 "" H 4450 1100 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L FrontPanel-rescue:R R1
+L R R1
 U 1 1 5B96EAED
 P 4000 1000
 F 0 "R1" V 4080 1000 50  0000 C CNN
@@ -70,7 +104,7 @@ F 3 "" H 4000 1000 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L FrontPanel-rescue:LED D4
+L LED D4
 U 1 1 5B96EBA4
 P 4000 1300
 F 0 "D4" H 4000 1400 50  0000 C CNN
@@ -81,7 +115,7 @@ F 3 "" H 4000 1300 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L FrontPanel-rescue:LED D3
+L LED D3
 U 1 1 5B96ED95
 P 3500 1200
 F 0 "D3" H 3500 1300 50  0000 C CNN
@@ -92,7 +126,7 @@ F 3 "" H 3500 1200 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L FrontPanel-rescue:LED D2
+L LED D2
 U 1 1 5B96EDF8
 P 3050 1100
 F 0 "D2" H 3050 1200 50  0000 C CNN
@@ -103,7 +137,7 @@ F 3 "" H 3050 1100 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L FrontPanel-rescue:LED D1
+L LED D1
 U 1 1 5B96EE6D
 P 2650 1000
 F 0 "D1" H 2650 1100 50  0000 C CNN
@@ -114,7 +148,7 @@ F 3 "" H 2650 1000 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR09
+L GND #PWR09
 U 1 1 5B96F28B
 P 1800 1150
 F 0 "#PWR09" H 1800 900 50  0001 C CNN
@@ -127,7 +161,7 @@ $EndComp
 NoConn ~ 6100 900 
 NoConn ~ 6100 1400
 $Comp
-L MyParts:TS001 SW10
+L TS001 SW10
 U 1 1 5B97F5D5
 P 5250 2600
 F 0 "SW10" H 5250 2450 60  0000 C CNN
@@ -138,7 +172,7 @@ F 3 "" H 5250 2550 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MyParts:TS001 SW8
+L TS001 SW8
 U 1 1 5B97FDA9
 P 4200 2400
 F 0 "SW8" H 4200 2250 60  0000 C CNN
@@ -149,7 +183,7 @@ F 3 "" H 4200 2350 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MyParts:TS001 SW7
+L TS001 SW7
 U 1 1 5B97FE97
 P 3700 2300
 F 0 "SW7" H 3700 2150 60  0000 C CNN
@@ -160,7 +194,7 @@ F 3 "" H 3700 2250 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MyParts:TS001 SW6
+L TS001 SW6
 U 1 1 5B97FF44
 P 3250 2200
 F 0 "SW6" H 3250 2050 60  0000 C CNN
@@ -171,7 +205,7 @@ F 3 "" H 3250 2150 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MyParts:TS001 SW5
+L TS001 SW5
 U 1 1 5B97FFD7
 P 2800 2100
 F 0 "SW5" H 2800 1950 60  0000 C CNN
@@ -182,7 +216,7 @@ F 3 "" H 2800 2050 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MyParts:TS001 SW4
+L TS001 SW4
 U 1 1 5B98005F
 P 2350 2000
 F 0 "SW4" H 2350 1850 60  0000 C CNN
@@ -193,7 +227,7 @@ F 3 "" H 2350 1950 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MyParts:TS001 SW3
+L TS001 SW3
 U 1 1 5B9800E1
 P 1900 1900
 F 0 "SW3" H 1900 1750 60  0000 C CNN
@@ -204,7 +238,7 @@ F 3 "" H 1900 1850 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MyParts:TS001 SW2
+L TS001 SW2
 U 1 1 5B9801AB
 P 1350 1800
 F 0 "SW2" H 1350 1650 60  0000 C CNN
@@ -215,7 +249,7 @@ F 3 "" H 1350 1750 60  0000 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L MyParts:TS001 SW1
+L TS001 SW1
 U 1 1 5B98023D
 P 800 1700
 F 0 "SW1" H 800 1550 60  0000 C CNN
@@ -376,7 +410,7 @@ Wire Wire Line
 	3650 2500 3500 2500
 Connection ~ 3500 2500
 $Comp
-L MyParts:TS001 SW9
+L TS001 SW9
 U 1 1 5B98168A
 P 4700 2500
 F 0 "SW9" H 4700 2350 60  0000 C CNN
@@ -413,7 +447,7 @@ Wire Wire Line
 	4950 2700 4950 2300
 Connection ~ 4950 2300
 $Comp
-L power:GND #PWR010
+L GND #PWR010
 U 1 1 5B981BC6
 P 1450 3000
 F 0 "#PWR010" H 1450 2750 50  0001 C CNN

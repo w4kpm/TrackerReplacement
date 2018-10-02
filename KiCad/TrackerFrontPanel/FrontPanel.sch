@@ -1,40 +1,6 @@
-EESchema Schematic File Version 2
-LIBS:power
-LIBS:device
-LIBS:switches
-LIBS:relays
-LIBS:motors
-LIBS:transistors
-LIBS:conn
-LIBS:linear
-LIBS:regul
-LIBS:74xx
-LIBS:cmos4000
-LIBS:adc-dac
-LIBS:memory
-LIBS:xilinx
-LIBS:microcontrollers
-LIBS:dsp
-LIBS:microchip
-LIBS:analog_switches
-LIBS:motorola
-LIBS:texas
-LIBS:intel
-LIBS:audio
-LIBS:interface
-LIBS:digital-audio
-LIBS:philips
-LIBS:display
-LIBS:cypress
-LIBS:siliconi
-LIBS:opto
-LIBS:atmel
-LIBS:contrib
-LIBS:valves
-LIBS:stm32
-LIBS:MyParts
+EESchema Schematic File Version 4
 LIBS:FrontPanel-cache
-EELAYER 25 0
+EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -49,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L Conn_01x20 J2
+L FrontPanel-rescue:Conn_01x20 J2
 U 1 1 5B96B692
 P 2700 5100
 F 0 "J2" H 2700 6100 50  0000 C CNN
@@ -60,7 +26,7 @@ F 3 "" H 2700 5100 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Conn_01x06 J4
+L FrontPanel-rescue:Conn_01x06 J4
 U 1 1 5B96B7B2
 P 5200 7300
 F 0 "J4" H 5200 7600 50  0000 C CNN
@@ -71,7 +37,7 @@ F 3 "" H 5200 7300 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Conn_02x04_Odd_Even J3
+L FrontPanel-rescue:Conn_02x04_Odd_Even J3
 U 1 1 5B96B85D
 P 3700 1000
 F 0 "J3" H 3750 1200 50  0000 C CNN
@@ -82,7 +48,7 @@ F 3 "" H 3700 1000 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L GND #PWR01
+L power:GND #PWR01
 U 1 1 5B96B92C
 P 4200 900
 F 0 "#PWR01" H 4200 650 50  0001 C CNN
@@ -93,7 +59,7 @@ F 3 "" H 4200 900 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L +3.3V #PWR02
+L power:+3.3V #PWR02
 U 1 1 5B96B94A
 P 4200 1000
 F 0 "#PWR02" H 4200 850 50  0001 C CNN
@@ -104,7 +70,7 @@ F 3 "" H 4200 1000 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L GND #PWR03
+L power:GND #PWR03
 U 1 1 5B96BA03
 P 5400 6900
 F 0 "#PWR03" H 5400 6650 50  0001 C CNN
@@ -118,7 +84,7 @@ NoConn ~ 5300 7100
 NoConn ~ 5200 7100
 NoConn ~ 4900 7100
 $Comp
-L GND #PWR04
+L power:GND #PWR04
 U 1 1 5B96BB70
 P 3100 6000
 F 0 "#PWR04" H 3100 5750 50  0001 C CNN
@@ -129,7 +95,7 @@ F 3 "" H 3100 6000 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L +3.3V #PWR05
+L power:+3.3V #PWR05
 U 1 1 5B96BB8E
 P 3100 5900
 F 0 "#PWR05" H 3100 5750 50  0001 C CNN
@@ -141,7 +107,7 @@ F 3 "" H 3100 5900 50  0001 C CNN
 $EndComp
 NoConn ~ 2900 5800
 $Comp
-L GND #PWR06
+L power:GND #PWR06
 U 1 1 5B96BC1B
 P 3100 4100
 F 0 "#PWR06" H 3100 3850 50  0001 C CNN
@@ -244,7 +210,7 @@ RX
 Text Label 5750 2200 0    60   ~ 0
 TX
 $Comp
-L Conn_01x08 J1
+L FrontPanel-rescue:Conn_01x08 J1
 U 1 1 5B96C9E9
 P 1200 2200
 F 0 "J1" H 1200 2600 50  0000 C CNN
@@ -257,7 +223,7 @@ $EndComp
 Text Notes 600  1550 0    60   ~ 0
 NB: use only Straight through Ethernet cable-
 $Comp
-L GND #PWR07
+L power:GND #PWR07
 U 1 1 5B96CC13
 P 1600 1850
 F 0 "#PWR07" H 1600 1600 50  0001 C CNN
@@ -268,7 +234,7 @@ F 3 "" H 1600 1850 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L +3.3V #PWR08
+L power:+3.3V #PWR08
 U 1 1 5B96CC33
 P 1600 2450
 F 0 "#PWR08" H 1600 2300 50  0001 C CNN
@@ -281,14 +247,14 @@ $EndComp
 Wire Wire Line
 	1400 1800 1600 1800
 Wire Wire Line
-	1600 1800 1600 1900
+	1600 1800 1600 1850
 Wire Wire Line
 	1600 1900 1400 1900
 Connection ~ 1600 1850
 Wire Wire Line
 	1400 2400 1600 2400
 Wire Wire Line
-	1600 2400 1600 2500
+	1600 2400 1600 2450
 Wire Wire Line
 	1600 2500 1400 2500
 Connection ~ 1600 2450
@@ -305,7 +271,7 @@ F0 "pwr" 60
 F1 "pwr.sch" 60
 $EndSheet
 $Comp
-L STM32F303V(B-C)Tx_u U1
+L stm32:STM32F303V(B-C)Tx_u U1
 U 1 1 5B96D604
 P 11400 1600
 F 0 "U1" H 11400 1700 50  0000 C CNN
@@ -316,7 +282,7 @@ F 3 "" H 11400 1600 50  0000 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L STM32F303V(B-C)Tx_u U1
+L stm32:STM32F303V(B-C)Tx_u U1
 U 2 1 5B96D829
 P 9500 4900
 F 0 "U1" H 9500 5000 50  0000 C CNN
@@ -353,4 +319,8 @@ NoConn ~ 3500 1000
 NoConn ~ 3500 1200
 NoConn ~ 4000 1100
 NoConn ~ 4000 1200
+Wire Wire Line
+	1600 1850 1600 1900
+Wire Wire Line
+	1600 2450 1600 2500
 $EndSCHEMATC

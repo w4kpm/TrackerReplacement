@@ -1,0 +1,5 @@
+(sym_lib_table
+  (lib (name FrontPanel-rescue)(type Legacy)(uri ${KIPRJMOD}/FrontPanel-rescue.lib)(options "")(descr ""))
+  (lib (name stm32)(type Legacy)(uri /home/kelly/TrackerReplacement/KiCad/stm32-kicad-lib/stm32.lib)(options "")(descr ""))
+  (lib (name MyParts)(type Legacy)(uri /home/kelly/TrackerReplacement/KiCad/MyParts.lib)(options "")(descr ""))
+)

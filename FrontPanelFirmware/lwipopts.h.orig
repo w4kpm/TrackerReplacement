@@ -1,0 +1,3 @@
+// LWIP options file - hopefully this is enough - not sure if I need to enable dhcp
+#define PPP_SUPPORT 1
+#define PPP_INPROC_OWNTHREAD 1

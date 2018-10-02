@@ -1,0 +1,24 @@
+Connected
+Connected
+Connected
+Shell Server Starting
+Returned '0'
+Server Response Data Dump:
+    0x52 0x46 0x42 0x20 0x30 0x30 0x33 0x2E 0x30 0x30 0x38 0xA
+Security Code Data Dump:
+    0x0 0x0 0x0 0x1
+width: 1024
+height: 768
+bpp: 32
+depth: 24
+big-endian: 0
+true-color: 1
+red-max: 255
+green-max: 255
+blue-max: 255
+red-shift: 16
+green-shift: 8
+blue-shift: 0
+name:
+     kelly's X desktop (jarvis:1)
+
