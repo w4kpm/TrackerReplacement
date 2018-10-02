@@ -55,8 +55,9 @@ static char current_key =255;
 static uint8_t current_row= 4;
 static uint8_t strobe_wait= 1;
 
+#define SLEEPSECONDS 3600
 
-
+static int16_t sleep=0,sleepseconds=SLEEPSECONDS;
 static char rx_text[32][32];
 static int rx_queue_pos=0;
 static int rx_queue_num=0;
@@ -353,19 +354,23 @@ static THD_FUNCTION(Thread2, arg) {
   //  chprintf((BaseSequentialStream*)&SD1,"Start Update\r\n");
 
   while (TRUE) {
-      spiStart(&SPID2,&std_spicfg0);
-      spiSelect(&SPID2);      
-
-      //cksum = checksum();
-      //if (cksum == 0)	  
-      spiSend(&SPID2,64*128,&vbuf2);
-      //else
-      //	  spiSend(&SPID2,64*128,&vbuf);
+      if (sleep==0){
+	  
       
-      spiUnselect(&SPID2);
-      spiStop(&SPID2);
+	  spiStart(&SPID2,&std_spicfg0);
+	  spiSelect(&SPID2);      
+
+	  //cksum = checksum();
+	  //if (cksum == 0)	  
+	  spiSend(&SPID2,64*128,&vbuf2);
+	  //else
+	  //	  spiSend(&SPID2,64*128,&vbuf);
+	  
+	  spiUnselect(&SPID2);
+	  spiStop(&SPID2);
+
+      }
       chThdSleepMilliseconds(10);
-  
   }
 
   return MSG_OK;
@@ -484,7 +489,7 @@ static THD_FUNCTION(Thread4, arg) {
 
 
 int main(void) {
-    unsigned i,x;
+    unsigned i,x,y;
   char text[255];
   /*
    * System initializations.
@@ -583,22 +588,41 @@ int main(void) {
 //	  //
 //	  //shade_oled(i);
 //	  
-//	  sprintf(text,"%x ",i);
-//	  oled_draw_string(0,0,text);
-//	  sprintf(text,"0000000000   ");
-//	  for (x=0;x<10;x++)
-//	      if (palReadPad(GPIOC,x))
-//		  text[x] = '1';
-//	  oled_draw_string(0,1,text);
-//
-//	  sprintf(text,"1111111111   \r\n");
-//	  for (x=0;x<10;x++)
-//	      if (palReadPad(GPIOC,x))
-//		  text[x] = '0';
-//	  chprintf((BaseSequentialStream*)&SD2,text);
+	  for (y=0;y<10;y++){
+	      //sprintf(text,"sleep in %d  ",sleepseconds);	      
+	      //oled_draw_string(0,0,text);
+
+	      sprintf(text,"1111111111   \r\n");
+	      for (x=0;x<10;x++)
+		  if (palReadPad(GPIOC,x)==1)
+		      text[x] = '0';
+		  else{
+		      if (sleep==1){
+			  palSetPad(GPIOB,RST);
+			  chThdSleepMilliseconds(100);
+			  init_oled();
+			  sleep=0;
+		      }
+		      sleepseconds = SLEEPSECONDS;
+		      
+		      
+		  }
+	      chThdSleepMilliseconds(100);
+	      chprintf((BaseSequentialStream*)&SD2,text);
+	  }
+	  
 //	  oled_draw_string(0,2,"         1         2 ");
 //	  oled_draw_string(0,3,"1234567890123456789012");
-	  chThdSleepMilliseconds(100);    
+	  
+	  
+	  sleepseconds = sleepseconds-1;
+	  if (sleepseconds < 0)
+	      sleepseconds = 0;
+	  if (sleepseconds == 0){
+	      sleep=1;
+	      palClearPad(GPIOB,RST);
+	  }
+	      
    }
 
 

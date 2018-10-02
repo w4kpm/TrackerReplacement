@@ -24,7 +24,8 @@ for y in range(4):
     s.flush()
     time.sleep(1)
    
-for x in range(4):
-    s.write(buildButton(x,'0'))
-    s.write(buildText(x,0,'            '))
-s.flush()
+#for x in range(4):
+#    s.write(buildButton(x,'0'))
+#    s.write(buildText(x,0,'            '))
+#s.flush()
+#
