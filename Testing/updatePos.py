@@ -100,8 +100,8 @@ def reset_tracker_error(modbusid,serialport,setpoint):
 
 
 
-print(readmodbus(16,3,'sint',4,'/dev/ttyUSB1'))
-reset_tracker_error(16,'/dev/ttyUSB1',0)
-change_tracker_setpoint(16,'/dev/ttyUSB1',400)
+print(readmodbus(16,3,'sint',4,'/dev/ttyUSB0'))
+reset_tracker_error(16,'/dev/ttyUSB0',0)
+change_tracker_setpoint(16,'/dev/ttyUSB0',200)
 
-print(readmodbus(16,250,'float',4,'/dev/ttyUSB1'))
+print(readmodbus(16,250,'float',4,'/dev/ttyUSB0'))

@@ -279,7 +279,7 @@ static THD_FUNCTION(Thread3, arg) {
   while(TRUE)
       {
 	  
-	  b = sdGetTimeout(&SD2,TIME_MS2I(2));
+	  b = sdGetTimeout(&SD3,TIME_MS2I(2));
 
 	  
 	  if ((b!= Q_TIMEOUT) && (rx_queue_pos < 31))
@@ -316,7 +316,7 @@ static THD_FUNCTION(Thread5, arg) {
   while(TRUE)
       {
 	  
-	  b = sdGetTimeout(&SD3,TIME_MS2I(3));
+	  b = sdGetTimeout(&SD4,TIME_MS2I(3));
 
 	  
 	  if ((b!= Q_TIMEOUT) && (rx2_queue_pos < 31))
@@ -389,7 +389,7 @@ static THD_FUNCTION(Thread4, arg) {
 		{
 		    
 		    command = lcltext[1];		
-		    palSetPad(GPIOA,1);
+		    palSetPad(GPIOD,10);
 		    //chprintf((BaseSequentialStream*)&SD1,"+");
 		    reg = (lcltext[2]<<8)|lcltext[3];
 		    if ((command == 4)&&(reg==250))
@@ -404,7 +404,7 @@ static THD_FUNCTION(Thread4, arg) {
 
 			    *(uint16_t*)(lcltext+7) = CRC16(lcltext,7);
 			    lcltext[9] = 0;
-			    sdWrite(&SD2,lcltext,9);
+			    sdWrite(&SD3,lcltext,9);
 			    
 			}
 
@@ -427,7 +427,7 @@ static THD_FUNCTION(Thread4, arg) {
 			    lcltext[4] = value & 0xFF ;
 			    *(uint16_t*)(lcltext+5) = CRC16(lcltext,5);
 			    lcltext[7] = 0;
-			    sdWrite(&SD2,lcltext,7);
+			    sdWrite(&SD3,lcltext,7);
 			}
 		    if (command == 6)
 			{			    
@@ -445,7 +445,7 @@ static THD_FUNCTION(Thread4, arg) {
 				    
 				}
 
-			    sdWrite(&SD2,lcltext,rxPos);
+			    sdWrite(&SD3,lcltext,rxPos);
 			}
 
 
@@ -458,14 +458,14 @@ static THD_FUNCTION(Thread4, arg) {
 		    // PLC - I should really find a way to trigger it once the
 		    // call co sdWrite is done.chOQIsEmptyI
 
-		    while (!(oqIsEmptyI(&(&SD2)->oqueue)))
+		    while (!(oqIsEmptyI(&(&SD3)->oqueue)))
 		    {
 			//chprintf((BaseSequentialStream*)&SD1,".");
 		    	chThdSleepMilliseconds(1);
 		    }
 
 		    chThdSleepMilliseconds(2);
-		    palClearPad(GPIOA,1);
+		    palClearPad(GPIOD,10);
 		    //chThdSleepMilliseconds(1);
 		    //chprintf((BaseSequentialStream*)&SD1,"-");
 		    //hprintf(&SD1,lcltext);
@@ -479,15 +479,15 @@ static THD_FUNCTION(Thread4, arg) {
 void requestAngle(){
     char lcltext[32] = {0x01,0x03,0x00,0x00,0x00,0x02,0xc4,0x0b,0x00,0x00};
 
-    palSetPad(GPIOB,9);
-    sdWrite(&SD3,lcltext,8);
-    while (!(oqIsEmptyI(&(&SD3)->oqueue)))
+    palSetPad(GPIOC,12);
+    sdWrite(&SD4,lcltext,8);
+    while (!(oqIsEmptyI(&(&SD4)->oqueue)))
 	{
 	    
 	    chThdSleepMilliseconds(1);
 	}
     chThdSleepMilliseconds(2);
-    palClearPad(GPIOB,9);
+    palClearPad(GPIOC,12);
     
 }
 
@@ -576,7 +576,9 @@ void goWest(void){
 }
 
 
-
+uint8_t encodePos(int pos){
+    return pos + 32;
+}
 
 
 int main(void) {
@@ -598,16 +600,16 @@ int main(void) {
   wdgReset(&WDGD1);
   chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
   chMBObjectInit(&RxMbx2,&RxMbx2Buff,MAILBOX_SIZE);
-  palSetPadMode(GPIOE, 7, PAL_MODE_INPUT_ANALOG);
+  palSetPadMode(GPIOE, 7, PAL_MODE_INPUT_ANALOG); // current
 
   adcStart(&ADCD3, NULL);
   // The referenece voltage enable MUST come after the adcStart 
   adcSTM32EnableTSVREFE();
 
-  palSetPadMode(GPIOE, 3, PAL_MODE_INPUT_PULLUP);
+  palSetPadMode(GPIOE, 3, PAL_MODE_INPUT_PULLUP); // e/w limit sw
   palSetPadMode(GPIOE, 4, PAL_MODE_INPUT_PULLUP);
 
-  palSetPadMode(GPIOE, 5, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPadMode(GPIOE, 5, PAL_MODE_OUTPUT_PUSHPULL); // east west
   palSetPadMode(GPIOE, 6, PAL_MODE_OUTPUT_PUSHPULL);
   stopTracker();
   
@@ -618,35 +620,46 @@ int main(void) {
   /*
    * SPI1 I/O pins setup.
    */
-  palSetPadMode(GPIOB, 6, PAL_MODE_ALTERNATE(7));    
+  palSetPadMode(GPIOB, 6, PAL_MODE_ALTERNATE(7));   // UART1 - Debug
   palSetPadMode(GPIOB, 7, PAL_MODE_ALTERNATE(7));
 
-  palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));    
+  palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));  // UART2 - front panel
   palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
-  palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));    
-  palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
 
+  palSetPadMode(GPIOD, 9, PAL_MODE_ALTERNATE(7));   // UART3 Loop  
+  palSetPadMode(GPIOD, 8, PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOD, 10, PAL_MODE_OUTPUT_PUSHPULL);
 
-  palSetPadMode(GPIOB, 5, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(GPIOB, 8, PAL_MODE_INPUT_PULLUP);
-  palSetPadMode(GPIOB, 9, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(GPIOB, 15, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(GPIOB, 14, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(GPIOA, 1, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
-  palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
-  palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
-  palClearPad(GPIOA,1);
-  palSetPad(GPIOB,9);
+  palSetPadMode(GPIOC, 10, PAL_MODE_ALTERNATE(5));   // UART4 - Angle  
+  palSetPadMode(GPIOC, 11, PAL_MODE_ALTERNATE(5));
+  palSetPadMode(GPIOC, 12, PAL_MODE_OUTPUT_PUSHPULL);
+
+  
+
+  //palSetPadMode(GPIOB, 5, PAL_MODE_OUTPUT_PUSHPULL);
+  //palSetPadMode(GPIOB, 8, PAL_MODE_INPUT_PULLUP);
+  //palSetPadMode(GPIOB, 9, PAL_MODE_OUTPUT_PUSHPULL);
+  //palSetPadMode(GPIOB, 15, PAL_MODE_OUTPUT_PUSHPULL);
+  //palSetPadMode(GPIOB, 14, PAL_MODE_OUTPUT_PUSHPULL);
+  // palSetPadMode(GPIOA, 1, PAL_MODE_OUTPUT_PUSHPULL);
+
+  
+  //palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
+  // palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
+  //palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5)|PAL_STM32_OSPEED_HIGHEST);
+  //palClearPad(GPIOA,1);
+  //palSetPad(GPIOB,9);
 
 
 
 
   
   sdStart(&SD1, &uartCfg);
-  sdStart(&SD2, &uartCfg2);
+  sdStart(&SD2, &uartCfg);
   sdStart(&SD3, &uartCfg2);
+  sdStart(&SD4, &uartCfg2);
+  
     // chprintf((BaseSequentialStream*)&SD2,"Hello World 2\r\n");
   chprintf((BaseSequentialStream*)&SD1,"Hello World - I am # %d\r\n",my_address);
   //  palSetPadMode(GPIOA, 0, PAL_MODE_OUTPUT_PUSHPULL);
@@ -654,9 +667,10 @@ int main(void) {
 
   //palSetPadMode(GPIOB, 8, PAL_MODE_OUTPUT_PUSHPULL); 
 
-  //palClearPad(GPIOB, 8);     /* Green.  */
+  palClearPad(GPIOD, 10);   // Clear tx/rx for UART3
+  palClearPad(GPIOC, 12);   // Clear tx/rx for UART4
 
-  palSetPad(GPIOA,CS);
+  //palSetPad(GPIOA,CS);
   //  palSetPad(GPIOA,CS2);
 
 
@@ -730,10 +744,15 @@ int main(void) {
 
 	  if ((startMove)&&(currentAngle<setPoint)){
 	      startMove = 0;
+	      chprintf(&SD2,"@%c%cEast \r\n",encodePos(1),encodePos(10));
+	      chprintf(&SD1,"Move East \r\n");
 	      goEast();
 	  }
 	  if ((startMove)&&(currentAngle>setPoint)){
 	      startMove = 0;
+	      chprintf(&SD2,"@%c%cWest \r\n",encodePos(1),encodePos(10));
+	      chprintf(&SD1,"Move West \r\n");
+
 	      goWest();
 	  }
 	  if (goingWest && (currentAngle < -stopDeg/10.0)){
@@ -793,6 +812,11 @@ int main(void) {
 	  VDD = 3.3 * (*(uint16_t*)0x1FFFF7BA) / (samples1[1] * 1.0);
 	  currentAmps = calc_volts(VDD,samples1[0])/.14;
 	  step = (step +1)%100;
+	  chprintf(&SD2,"@%c%cSP:%.2f  \r\n",encodePos(0),encodePos(0),setPoint);
+	  chprintf(&SD2,"@%c%cA1:%.2f  \r\n",encodePos(1),encodePos(0),currentAngle);
+	  chprintf(&SD2,"@%c%cA2:%.2f  \r\n",encodePos(2),encodePos(0),currentAngle);
+	  chprintf(&SD2,"@%c%cA:%.2f  \r\n",encodePos(3),encodePos(0),currentAmps);
+	  chprintf(&SD2,"@%c%cID:%d  \r\n",encodePos(0),encodePos(10),my_address);
 	  chprintf(&SD1,"Angle:%.2f amps:%.2f volts%.2f setPoint:%.2f startMove:%d run:%d strain:%d stall:%d error:%d E:%d W:%d EL:%d WL:%d\r\n",currentAngle,currentAmps,VDD,setPoint,startMove,running,strainSeconds,stallSeconds,error,goingEast,goingWest,eastLimit,westLimit);
 	  speed = floor(currentAngle*10 - lastAngle*10);
 	  deg = floor(currentAngle*10);
