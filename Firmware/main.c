@@ -39,7 +39,12 @@ static adcsample_t samples1[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 static uint8_t txbuf[10];
 static uint8_t rxbuf[10];
 static uint8_t step;
+static uint8_t mode = 0; // 0 = auto 1 = manual
+static float currentAngle1;
+static float currentAngle2;
 static float currentAngle;
+static bool angleFlipFlop = false;
+static float maxAmps = 0.0;
 static float currentAmps;
 static float lastAngle;
 static float setPoint;
@@ -51,19 +56,21 @@ static msg_t RxMbxBuff[MAILBOX_SIZE];
 static mailbox_t RxMbx2;
 static msg_t RxMbx2Buff[MAILBOX_SIZE];
 
-
+static mailbox_t SSMbx;
+static msg_t SSMbxBuff[MAILBOX_SIZE];
 
 static uint16_t stallSeconds =0;
 static uint16_t strainSeconds =0;
 static int16_t deg,speed,setpoint =0;
-static uint16_t speedThresh = 2;  // threshold to tell if it is moving or not
-static uint16_t fastAmpsThresh = 100;  // threshold to tell if it is moving or not
-static uint16_t slowAmpsThresh = 80;  // threshold to tell if it is moving or not
+static float currentSpeed = 0.0;
+static float speedThresh = .01;  // threshold to tell if it is moving or not
+static uint16_t fastAmpsThresh = 120;  // threshold to tell if it is moving or not
+static uint16_t slowAmpsThresh = 50;  // threshold to tell if it is moving or not
 static uint16_t error;
 static uint16_t hysterisisDeg = 20; // these are in integers so that we can
                                     // maybe set them via modbus later
 static uint16_t stopDeg = 430;
-static uint16_t stoptime = 20;
+static uint16_t stoptime = 66;
 static uint16_t running;
 static uint8_t startMove;
 static uint8_t eastLimit;
@@ -75,10 +82,13 @@ static uint8_t goingWest;
 static double deg2;
 static char rx_text[32][32];
 static char rx2_text[32][32];
+static char btn_state[32];
 static int rx_queue_pos=0;
 static int rx_queue_num=0;
 static int rx2_queue_pos=0;
 static int rx2_queue_num=0;
+static int rx3_queue_pos=0;
+
 
 static uint8_t my_address = 0x10;
 
@@ -91,6 +101,20 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
   (void)err;
   dbg('error!!');
 }
+
+static PWMConfig pwmcfg = {
+  20000,                                    /* 10kHz PWM clock frequency.   */
+  10,                                    /* Initial PWM period 1S.       */
+  NULL,
+  {
+   {PWM_OUTPUT_ACTIVE_HIGH, NULL},
+   {PWM_OUTPUT_DISABLED, NULL},
+   {PWM_OUTPUT_DISABLED, NULL},
+   {PWM_OUTPUT_DISABLED, NULL}
+  },
+  0,
+  0
+};
 
 
 
@@ -136,7 +160,6 @@ static const WDGConfig wdgcfg = {
 
 // This got redefined in a later version of Chibios for this board
 #define GPIOA_PIN0 0
-
 static const SPIConfig std_spicfg1 = {
   NULL,
   NULL,
@@ -311,6 +334,7 @@ static THD_FUNCTION(Thread5, arg) {
   (void)arg;
   int pass = 0;
   msg_t b = 0;
+  
 
   chRegSetThreadName("serial2");
   while(TRUE)
@@ -478,9 +502,15 @@ static THD_FUNCTION(Thread4, arg) {
 
 void requestAngle(){
     char lcltext[32] = {0x01,0x03,0x00,0x00,0x00,0x02,0xc4,0x0b,0x00,0x00};
+    char lcltext2[32] = {0x02,0x03,0x00,0x00,0x00,0x02,0xc4,0x38,0x00,0x00};
+
 
     palSetPad(GPIOC,12);
-    sdWrite(&SD4,lcltext,8);
+    angleFlipFlop  = !angleFlipFlop;
+    if (angleFlipFlop)
+	sdWrite(&SD4,lcltext,8);
+    else
+	sdWrite(&SD4,lcltext2,8);
     while (!(oqIsEmptyI(&(&SD4)->oqueue)))
 	{
 	    
@@ -508,6 +538,7 @@ static THD_FUNCTION(Thread6, arg) {
     msg_t rxPos;
     msg_t response;
     uint8_t skip_next;
+    float lclAngle;
     uint16_t reg;
     uint16_t value;
 
@@ -526,8 +557,19 @@ static THD_FUNCTION(Thread6, arg) {
 		(*(uint16_t*)(lcltext+rxPos-2) == CRC16(lcltext,rxPos-2)))
 
 		{
-		    currentAngle = lcltext[3]*100+lcltext[4]+lcltext[5]*.01;
-		    currentAngle = currentAngle - 180.0;
+		    lclAngle = lcltext[3]*100+lcltext[4]+lcltext[5]*.01;
+		    lclAngle = lclAngle - 180.0;
+		    currentAngle1 = currentAngle1*.9 + lclAngle*.1;
+		 
+		}
+            if ((lcltext[0] == 2) &&
+		(*(uint16_t*)(lcltext+rxPos-2) == CRC16(lcltext,rxPos-2)))
+
+		{
+		    lclAngle = lcltext[3]*100+lcltext[4]+lcltext[5]*.01;
+		    lclAngle = lclAngle - 180.0;
+		    currentAngle2 = currentAngle2*.9 + lclAngle*.1;
+
 
 		 
 		}
@@ -535,6 +577,65 @@ static THD_FUNCTION(Thread6, arg) {
 	}
 
     }
+
+
+static THD_WORKING_AREA(waThread7, 512);
+static THD_FUNCTION(Thread7, arg) {
+  (void)arg;
+  int pass = 0;
+  msg_t b = 0;
+  char lcl_btn_state[32]; 
+  chRegSetThreadName("serial3");
+  while(TRUE)
+      {
+	  
+	  b = sdGetTimeout(&SD2,TIME_MS2I(2));
+
+	  if (rx3_queue_pos > 20) // something went wrong - we should only get 10
+	      {
+		  rx3_queue_pos = 0;
+	      }
+	  if ((b!= Q_TIMEOUT) && (rx3_queue_pos < 31))
+
+	      {
+		  
+		  //chprintf((BaseSequentialStream*)&SD1,"got char: %x\r\n",b);
+		  lcl_btn_state[rx3_queue_pos++]=b;
+		  if ((b == 10) && (rx3_queue_pos > 0)){
+		      
+		      lcl_btn_state[rx3_queue_pos-1] =0;
+		      strcpy(btn_state,lcl_btn_state);
+		      rx3_queue_pos = 0;
+		  }
+
+		  
+	      }
+	  
+	  
+  
+      }
+
+  return MSG_OK;
+}
+
+
+static THD_WORKING_AREA(waThread8, 1024);
+static THD_FUNCTION(Thread8, arg) {
+    int x;
+    int percent;
+    while (TRUE)
+	{
+	    chMBFetchTimeout(&SSMbx,&x,TIME_INFINITE);
+	    for (x=0;x<11;x++){
+		percent = x*1000;
+		if (percent < 5000)
+		    percent = 5000;
+		pwmEnableChannel(&PWMD1, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD1, percent));
+		chThdSleepMilliseconds(100);
+	    }
+	}
+}
+
 
 
 
@@ -552,6 +653,7 @@ float calc_volts(float vdd,int rawread)
 void stopTracker(void){
     palClearPad(GPIOE,5);
     palClearPad(GPIOE,6);
+    //pwmEnableChannel(&PWMD1, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD1, 0));
     running =0;
     goingEast =0;
     goingWest =0;
@@ -560,6 +662,8 @@ void stopTracker(void){
 void goEast(void){
     palSetPad(GPIOE,5);
     palClearPad(GPIOE,6);
+    if (running == 0)
+	chMBPostTimeout(&SSMbx,0,TIME_INFINITE); // let our mailbox know
     running =1;
 
     goingEast = 1;
@@ -569,6 +673,8 @@ void goEast(void){
 void goWest(void){
     palClearPad(GPIOE,5);
     palSetPad(GPIOE,6);
+    if (running==0)
+	chMBPostTimeout(&SSMbx,0,TIME_INFINITE); // let our mailbox know
     running =1;
     goingEast = 0;
     goingWest = 1;
@@ -584,7 +690,7 @@ uint8_t encodePos(int pos){
 int main(void) {
   unsigned i;
   float VDD;
-
+  
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -594,12 +700,14 @@ int main(void) {
    */
   halInit();
   chSysInit();
-
+  
+  pwmStart(&PWMD1, &pwmcfg);
   palSetPad(GPIOB, 5);
   wdgStart(&WDGD1, &wdgcfg);
   wdgReset(&WDGD1);
   chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
   chMBObjectInit(&RxMbx2,&RxMbx2Buff,MAILBOX_SIZE);
+  chMBObjectInit(&SSMbx,&SSMbxBuff,MAILBOX_SIZE);
   palSetPadMode(GPIOE, 7, PAL_MODE_INPUT_ANALOG); // current
 
   adcStart(&ADCD3, NULL);
@@ -626,6 +734,7 @@ int main(void) {
   palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));  // UART2 - front panel
   palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
 
+  palSetPadMode(GPIOE, 9, PAL_MODE_ALTERNATE(2));   // PWM   
 
   palSetPadMode(GPIOD, 9, PAL_MODE_ALTERNATE(7));   // UART3 Loop  
   palSetPadMode(GPIOD, 8, PAL_MODE_ALTERNATE(7));
@@ -691,6 +800,8 @@ int main(void) {
   
   chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, Thread5, NULL);
   chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, Thread6, NULL);
+  chThdCreateStatic(waThread7, sizeof(waThread7), NORMALPRIO, Thread7, NULL);
+  chThdCreateStatic(waThread8, sizeof(waThread8), NORMALPRIO, Thread8, NULL);
 
   uint32_t x,y;
 
@@ -721,25 +832,31 @@ int main(void) {
   chprintf((BaseSequentialStream*)&SD1,"Point B\r\n");
   requestAngle();
   chThdSleepMilliseconds(500);
+  requestAngle();
+  chThdSleepMilliseconds(500);
+  currentAngle = (currentAngle1 + currentAngle2)/2;
   setPoint = lastAngle = currentAngle;
   
   while (TRUE)
       {
 
 	  wdgReset(&WDGD1);
-
+	  currentAngle = (currentAngle1 + currentAngle2)/2;
 	  westLimit = !(palReadPad(GPIOE,3));
 	  eastLimit = !(palReadPad(GPIOE,4));
 	  
 	  if (error){
 	      stopTracker();
+	      
 	  }
 	  
 	  if (goingEast && (currentAngle > setPoint)){
 	      stopTracker();
+	      chprintf(&SD2,"@%c%cStop \r\n",encodePos(1),encodePos(10));
 	  }
 	  if (goingWest && (currentAngle < setPoint)){
 	      stopTracker();
+	      chprintf(&SD2,"@%c%cStop \r\n",encodePos(1),encodePos(10));
 	  }
 
 	  if ((startMove)&&(currentAngle<setPoint)){
@@ -764,15 +881,16 @@ int main(void) {
 	      stopTracker();
 	  }
 
-	  if (running && (abs(speed) < speedThresh)){
+	  if (running && (fabs(currentSpeed) < speedThresh)){
 	      stallSeconds = stallSeconds+1;
 	  }
-	  if (running && (abs(speed) > speedThresh)){
+	  if (running && (fabs(currentSpeed) > speedThresh)){
 	      stallSeconds = 0;
 	  }
 	  if (running && (stallSeconds > stoptime)){
 	      error = 2;
 	      stopTracker();
+	      chprintf(&SD2,"@%c%cStall %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 
 	  if (running && (currentAmps*10 > slowAmpsThresh)){
@@ -784,20 +902,24 @@ int main(void) {
 	  if (running && (strainSeconds > stoptime)){
 	      error = 3;
 	      stopTracker();
+	      chprintf(&SD2,"@%c%cStrain %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 	      
-	  if (running && (currentAmps*10 > fastAmpsThresh)){
+	if (running && (currentAmps*10 > fastAmpsThresh)){
 	      error=4;
 	      stopTracker();
+	      chprintf(&SD2,"@%c%cOCurr %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 
 	  if (goingEast && eastLimit){
 	      error=5;
 	      stopTracker();
+	      chprintf(&SD2,"@%c%cELimit %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 	  if (goingWest && westLimit){
 	      error=6;
 	      stopTracker();
+	      chprintf(&SD2,"@%c%cWLimit %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 		  
 	      
@@ -808,23 +930,83 @@ int main(void) {
 	  adcConvert(&ADCD3, &adcgrpcfg1, samples1, ADC_GRP1_BUF_DEPTH);
 
 
-	  chThdSleepMilliseconds(250);
+	  chThdSleepMilliseconds(100);
 	  VDD = 3.3 * (*(uint16_t*)0x1FFFF7BA) / (samples1[1] * 1.0);
 	  currentAmps = calc_volts(VDD,samples1[0])/.14;
+	  if (currentAmps > maxAmps)
+	      maxAmps = currentAmps;
 	  step = (step +1)%100;
 	  chprintf(&SD2,"@%c%cSP:%.2f  \r\n",encodePos(0),encodePos(0),setPoint);
-	  chprintf(&SD2,"@%c%cA1:%.2f  \r\n",encodePos(1),encodePos(0),currentAngle);
-	  chprintf(&SD2,"@%c%cA2:%.2f  \r\n",encodePos(2),encodePos(0),currentAngle);
-	  chprintf(&SD2,"@%c%cA:%.2f  \r\n",encodePos(3),encodePos(0),currentAmps);
-	  chprintf(&SD2,"@%c%cID:%d  \r\n",encodePos(0),encodePos(10),my_address);
+	  chprintf(&SD2,"@%c%cA1:%.2f  \r\n",encodePos(1),encodePos(0),currentAngle1);
+	  chprintf(&SD2,"@%c%cA2:%.2f  \r\n",encodePos(2),encodePos(0),currentAngle2);
+	  chprintf(&SD2,"@%c%cA:%.2f  \r\n",encodePos(3),encodePos(0),maxAmps);
+	  chprintf(&SD2,"@%c%c%d  \r\n",encodePos(2),encodePos(10),stallSeconds);
+	  chprintf(&SD2,"@%c%c%s\r\n",encodePos(3),encodePos(8),btn_state);
+	  //chprintf(&SD2,"@%c%cID:%d  \r\n",encodePos(0),encodePos(10),my_address);
+	  chprintf(&SD2,"@%c%cSpd:%0.2f  \r\n",encodePos(0),encodePos(9),currentSpeed);
+	  
+	  if (strncmp(btn_state,"1111",4)==0){
+	      chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(2));
+	      chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(3));
+	      chThdSleepMilliseconds(1000);
+	      mode=1;
+	  }
+	  if ((btn_state[3] == '1')&&(mode==1)){
+	      setPoint+=10;
+	      startMove = 1;
+	      if (setPoint> 45) setPoint = 45;
+	  }
+	  if ((btn_state[7] == '1')&&(mode==1)){
+	      error =0;
+	      maxAmps=0.0;
+	      stallSeconds = 0;
+	      chprintf(&SD2,"@%c%cReset \r\n",encodePos(1),encodePos(10),error);
+		  
+	  }
+
+	  
+	  if ((btn_state[1] == '1')&&(mode==1)){
+	      setPoint-=10;
+	      startMove = 1;
+	      if (setPoint< -45) setPoint = -45;
+	  }
+
+
+
+	  if ((btn_state[0] == '1')&&(mode==1)){
+	      setPoint+=1;
+	      startMove = 1;
+	      if (setPoint> 45) setPoint = 45;
+	  }
+
+	  if ((btn_state[2] == '1')&&(mode==1)){
+	      setPoint-=1;
+	      startMove = 1;
+	      if (setPoint< -45) setPoint = -45;
+	  }
+
+	  
+	  if ((btn_state[4] == '1')&&(mode==1))
+	      mode = 0;
+	  if (mode==1){
+	      chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(2));
+	      chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(3));
+	  }	
+	  else{
+	      chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(2));
+	      chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(3));
+	  }
+
+
 	  chprintf(&SD1,"Angle:%.2f amps:%.2f volts%.2f setPoint:%.2f startMove:%d run:%d strain:%d stall:%d error:%d E:%d W:%d EL:%d WL:%d\r\n",currentAngle,currentAmps,VDD,setPoint,startMove,running,strainSeconds,stallSeconds,error,goingEast,goingWest,eastLimit,westLimit);
 	  speed = floor(currentAngle*10 - lastAngle*10);
+	  currentSpeed = currentSpeed*0.9 + (currentAngle-lastAngle)*0.1;
 	  deg = floor(currentAngle*10);
 
 	  lastAngle = currentAngle;
 	  requestAngle();
-	  chThdSleepMilliseconds(500);
-	  
+	  chThdSleepMilliseconds(100);
+	  requestAngle();
 
    }
 
