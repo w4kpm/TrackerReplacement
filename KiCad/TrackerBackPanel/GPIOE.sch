@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 5 5
+Sheet 3 5
 Title ""
 Date ""
 Rev ""
@@ -75,21 +75,6 @@ F 3 "" H 2850 1450 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L power:+3.3V #PWR?
-U 1 1 5BA265D3
-P 2400 2150
-AR Path="/5BA265D3" Ref="#PWR?"  Part="1" 
-AR Path="/5BA26507/5BA265D3" Ref="#PWR026"  Part="1" 
-F 0 "#PWR026" H 2400 2000 50  0001 C CNN
-F 1 "+3.3V" V 2415 2278 50  0000 L CNN
-F 2 "" H 2400 2150 50  0001 C CNN
-F 3 "" H 2400 2150 50  0001 C CNN
-	1    2400 2150
-	0    1    1    0   
-$EndComp
-Wire Wire Line
-	2200 2150 2400 2150
-$Comp
 L stm32:STM32F303V(B-C)Tx_u U1
 U 5 1 5BA274CD
 P 8550 1800
@@ -137,7 +122,6 @@ NoConn ~ 6950 1300
 NoConn ~ 6950 1400
 NoConn ~ 6950 1500
 NoConn ~ 6950 1600
-NoConn ~ 6950 1700
 NoConn ~ 6950 1800
 NoConn ~ 6950 2400
 NoConn ~ 6950 2500
@@ -206,4 +190,10 @@ F 3 "" H 2850 1650 50  0001 C CNN
 	1    2850 1650
 	0    -1   -1   0   
 $EndComp
+Wire Wire Line
+	6950 1700 4450 1700
+Wire Wire Line
+	4450 1700 4450 2150
+Wire Wire Line
+	2200 2150 4450 2150
 $EndSCHEMATC
