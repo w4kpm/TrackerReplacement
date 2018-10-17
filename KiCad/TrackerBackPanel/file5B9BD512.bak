@@ -99,8 +99,8 @@ L BackPanel-rescue:CP1 C8
 U 1 1 5B9BD752
 P 5600 5100
 F 0 "C8" H 5625 5200 50  0000 L CNN
-F 1 "100uF" H 5625 5000 50  0000 L CNN
-F 2 "Capacitor_SMD:CP_Elec_5x5.3" H 5600 5100 50  0001 C CNN
+F 1 "220uF" H 5625 5000 50  0000 L CNN
+F 2 "Capacitor_SMD:CP_Elec_10x10" H 5600 5100 50  0001 C CNN
 F 3 "" H 5600 5100 50  0001 C CNN
 	1    5600 5100
 	-1   0    0    -1  
@@ -306,12 +306,12 @@ Wire Wire Line
 $Comp
 L power:+24V #PWR08
 U 1 1 5BA150A0
-P 4100 4800
-F 0 "#PWR08" H 4100 4650 50  0001 C CNN
-F 1 "+24V" V 4115 4928 50  0000 L CNN
-F 2 "" H 4100 4800 50  0001 C CNN
-F 3 "" H 4100 4800 50  0001 C CNN
-	1    4100 4800
+P 3450 4450
+F 0 "#PWR08" H 3450 4300 50  0001 C CNN
+F 1 "+24V" V 3465 4578 50  0000 L CNN
+F 2 "" H 3450 4450 50  0001 C CNN
+F 3 "" H 3450 4450 50  0001 C CNN
+	1    3450 4450
 	0    -1   -1   0   
 $EndComp
 $Comp
@@ -347,8 +347,6 @@ F 3 "" H 5950 4800 50  0001 C CNN
 	1    5950 4800
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	4100 4800 4450 4800
 Wire Wire Line
 	4750 5100 4750 5250
 Wire Wire Line
@@ -396,4 +394,53 @@ F 3 "" H 3050 3600 50  0000 C CNN
 	8    3050 3600
 	1    0    0    -1  
 $EndComp
+$Comp
+L BackPanel-rescue:CP1 C12
+U 1 1 5BC576E6
+P 4200 5100
+F 0 "C12" H 4225 5200 50  0000 L CNN
+F 1 "220uF" H 4225 5000 50  0000 L CNN
+F 2 "Capacitor_SMD:CP_Elec_10x10" H 4200 5100 50  0001 C CNN
+F 3 "" H 4200 5100 50  0001 C CNN
+	1    4200 5100
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	4200 5250 4750 5250
+Wire Wire Line
+	4200 4950 4200 4800
+Connection ~ 4200 4800
+Wire Wire Line
+	4200 4800 4450 4800
+$Comp
+L Connector_Generic:Conn_01x02 J11
+U 1 1 5BC594EE
+P 3000 5100
+F 0 "J11" H 2920 4775 50  0000 C CNN
+F 1 "Conn_01x02" H 2920 4866 50  0000 C CNN
+F 2 "TerminalBlock:TerminalBlock_Altech_AK300-2_P5.00mm" H 3000 5100 50  0001 C CNN
+F 3 "~" H 3000 5100 50  0001 C CNN
+	1    3000 5100
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	4200 5250 3550 5250
+Wire Wire Line
+	3550 5250 3550 5100
+Wire Wire Line
+	3550 5100 3200 5100
+Connection ~ 4200 5250
+Wire Wire Line
+	3200 5000 3500 5000
+Wire Wire Line
+	3500 5000 3500 4800
+Wire Wire Line
+	3500 4800 3750 4800
+Wire Wire Line
+	3450 4450 3750 4450
+Wire Wire Line
+	3750 4450 3750 4800
+Connection ~ 3750 4800
+Wire Wire Line
+	3750 4800 4200 4800
 $EndSCHEMATC

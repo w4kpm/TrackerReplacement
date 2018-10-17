@@ -143,31 +143,13 @@ F 3 "~" H 750 1300 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	950  750  950  800 
-Wire Wire Line
-	950  1200 950  1250
-Wire Wire Line
 	950  1550 950  1600
 Wire Wire Line
 	950  1900 950  2000
 Wire Wire Line
-	1450 2000 1450 800 
-Wire Wire Line
-	1450 800  950  800 
-Wire Wire Line
 	1450 2000 2100 2000
-Connection ~ 950  800 
-Wire Wire Line
-	950  800  950  850 
-Wire Wire Line
-	950  1250 1700 1250
-Wire Wire Line
-	1700 1250 1700 1850
 Wire Wire Line
 	1700 1850 2100 1850
-Connection ~ 950  1250
-Wire Wire Line
-	950  1250 950  1300
 $Comp
 L power:GND #PWR013
 U 1 1 5BA30707
@@ -184,10 +166,6 @@ Wire Wire Line
 Connection ~ 950  1600
 Wire Wire Line
 	950  1600 950  1650
-Text Label 1150 800  0    50   ~ 0
-RS485A(-)
-Text Label 1100 1250 0    50   ~ 0
-RS485B(+)
 Text Label 1050 1600 0    50   ~ 0
 RS485C
 Text Notes 1000 1950 0    50   ~ 0
@@ -304,7 +282,7 @@ U 1 1 5BA44F0E
 P 4600 4550
 F 0 "SW1" H 4600 3813 60  0000 C CNN
 F 1 "SW-DIP-8" H 4600 3919 60  0000 C CNN
-F 2 "Button_Switch_SMD:SW_DIP_SPSTx08_Slide_6.7x21.88mm_W6.73mm_P2.54mm_LowProfile_JPin" H 4600 4550 60  0001 C CNN
+F 2 "Button_Switch_SMD:SW_DIP_SPSTx08_Slide_6.7x21.88mm_W8.61mm_P2.54mm_LowProfile" H 4600 4550 60  0001 C CNN
 F 3 "" H 4600 4550 60  0000 C CNN
 	1    4600 4550
 	-1   0    0    1   
@@ -409,4 +387,28 @@ Wire Wire Line
 Connection ~ 3900 4550
 Wire Wire Line
 	3900 4550 3900 4700
+Wire Wire Line
+	950  1200 950  1250
+Wire Wire Line
+	950  750  950  800 
+Wire Wire Line
+	1450 2000 1450 1250
+Wire Wire Line
+	1450 1250 950  1250
+Connection ~ 950  1250
+Wire Wire Line
+	950  1250 950  1300
+Wire Wire Line
+	1700 800  950  800 
+Wire Wire Line
+	1700 800  1700 1850
+Connection ~ 950  800 
+Wire Wire Line
+	950  800  950  850 
+Text Label 1200 800  0    50   ~ 0
+RS485A(-)
+Text Label 1150 1250 0    50   ~ 0
+RS485B(+)
+Text Notes 2100 850  0    50   ~ 0
+NB - These have been switched on purpose -\nindustry is labelled opposite of what the chip says.\n\n
 $EndSCHEMATC

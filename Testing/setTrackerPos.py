@@ -3,6 +3,10 @@ from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.payload import BinaryPayloadBuilder
 
+import logging
+modbus_log = logging.getLogger("pymodbus")
+modbus_log.setLevel(logging.DEBUG)
+logging.basicConfig()
 
 
 def readmodbus(modbusid,register,fieldtype,readtype,serialport):
@@ -35,7 +39,7 @@ def readmodbus(modbusid,register,fieldtype,readtype,serialport):
                     x = instrument.read_input_registers(register,readlen,unit=modbusid,timeout=.5)
                 #print("..")
                 instrument.close()
-                #print(x)
+                print(x)
                 decoder = BinaryPayloadDecoder.fromRegisters(x.registers,byteorder=Endian.Big)
                 if fieldtype == 'slong':
                     x = decoder.decode_32bit_int()
@@ -103,8 +107,8 @@ def change_sensor_id(modbusid,serialport,id):
     instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
 
     builder = BinaryPayloadBuilder(byteorder=Endian.Big)
-
-    builder.add_16bit_int(id)
+    print("%X"%((id<<8)|id))
+    builder.add_16bit_int((id<<8)|id)
     payload = builder.build()
     #print(payload)
 
@@ -124,6 +128,9 @@ def change_sensor_id(modbusid,serialport,id):
 #reset_tracker_error(16,'/dev/ttyUSB0',0)
 #change_tracker_setpoint(16,'/dev/ttyUSB0',50)
 
-readmodbus(1,1,'sint',4,'/dev/ttyUSB0')
-change_sensor_id(1,'/dev/ttyUSB0',2)
-readmodbus(1,1,'sint',4,'/dev/ttyUSB0')
+#readmodbus(1,1,'sint',4,'/dev/ttyUSB0')
+print(readmodbus(2,0,'long',3,'/dev/ttyUSB0'))
+#readmodbus(1,0,'long',3,'/dev/ttyUSB0')
+#change_sensor_id(1,'/dev/ttyUSB0',2)
+#readmodbus(2,1,'sint',4,'/dev/ttyUSB0')
+#readmodbus(2,1,'sint',3,'/dev/ttyUSB0')

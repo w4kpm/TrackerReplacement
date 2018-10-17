@@ -151,7 +151,7 @@ $EndComp
 Wire Wire Line
 	4600 2850 4450 2850
 Wire Wire Line
-	4450 2950 5850 2950
+	4450 2950 5300 2950
 Wire Wire Line
 	5850 2950 5850 2300
 Wire Wire Line
@@ -161,16 +161,16 @@ Wire Wire Line
 Wire Wire Line
 	5550 2200 5550 3050
 Wire Wire Line
-	5550 3050 4450 3050
+	5550 3050 4700 3050
 Text Label 4800 3050 0    50   ~ 0
 EastLimit
 Text Label 4950 2950 0    50   ~ 0
 WestLimit
-Text Label 3600 2350 0    50   ~ 0
+Text Label 3650 1900 0    50   ~ 0
 CurrentSense
 Text Label 3800 2100 0    50   ~ 0
 GoEast
-Text Label 3800 1900 0    50   ~ 0
+Text Label 3100 2350 0    50   ~ 0
 GoWest
 NoConn ~ 7250 3700
 NoConn ~ 7250 3800
@@ -196,4 +196,92 @@ Wire Wire Line
 	4450 1700 4450 2150
 Wire Wire Line
 	2200 2150 4450 2150
+$Comp
+L BackPanel-rescue:C C15
+U 1 1 5BC5D31A
+P 5300 3400
+F 0 "C15" H 5415 3446 50  0000 L CNN
+F 1 "1uF" H 5415 3355 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 5338 3250 50  0001 C CNN
+F 3 "" H 5300 3400 50  0001 C CNN
+	1    5300 3400
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:C C14
+U 1 1 5BC5D397
+P 4700 3400
+F 0 "C14" H 4815 3446 50  0000 L CNN
+F 1 "1uF" H 4815 3355 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 4738 3250 50  0001 C CNN
+F 3 "" H 4700 3400 50  0001 C CNN
+	1    4700 3400
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:CP1 C13
+U 1 1 5BC5D41F
+P 4500 3400
+F 0 "C13" H 4150 3500 50  0000 L CNN
+F 1 "100uF" H 4100 3400 50  0000 L CNN
+F 2 "Capacitor_SMD:CP_Elec_6.3x5.2" H 4500 3400 50  0001 C CNN
+F 3 "" H 4500 3400 50  0001 C CNN
+	1    4500 3400
+	1    0    0    -1  
+$EndComp
+$Comp
+L BackPanel-rescue:CP1 C16
+U 1 1 5BC5D46A
+P 5700 3400
+F 0 "C16" H 5815 3446 50  0000 L CNN
+F 1 "100uF" H 5815 3355 50  0000 L CNN
+F 2 "Capacitor_SMD:CP_Elec_6.3x5.2" H 5700 3400 50  0001 C CNN
+F 3 "" H 5700 3400 50  0001 C CNN
+	1    5700 3400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5300 3550 4700 3550
+Connection ~ 5300 3550
+Wire Wire Line
+	4700 3550 4500 3550
+Connection ~ 4700 3550
+$Comp
+L power:GND #PWR0103
+U 1 1 5BC5DDC5
+P 4250 3550
+F 0 "#PWR0103" H 4250 3300 50  0001 C CNN
+F 1 "GND" H 4255 3377 50  0000 C CNN
+F 2 "" H 4250 3550 50  0001 C CNN
+F 3 "" H 4250 3550 50  0001 C CNN
+	1    4250 3550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4500 3550 4250 3550
+Connection ~ 4500 3550
+Wire Wire Line
+	4500 3250 4500 3050
+Connection ~ 4500 3050
+Wire Wire Line
+	4500 3050 4450 3050
+Wire Wire Line
+	4700 3250 4700 3050
+Connection ~ 4700 3050
+Wire Wire Line
+	4700 3050 4500 3050
+Wire Wire Line
+	5300 3250 5300 2950
+Connection ~ 5300 2950
+Wire Wire Line
+	5300 2950 5700 2950
+Wire Wire Line
+	5300 3550 5700 3550
+Wire Wire Line
+	5700 3250 5700 2950
+Connection ~ 5700 2950
+Wire Wire Line
+	5700 2950 5850 2950
+Text Label 2600 2150 0    50   ~ 0
+pwm
 $EndSCHEMATC
