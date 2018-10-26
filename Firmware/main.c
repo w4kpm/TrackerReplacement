@@ -64,7 +64,7 @@ static uint16_t strainSeconds =0;
 static int16_t deg,speed,setpoint =0;
 static float currentSpeed = 0.0;
 static float speedThresh = .01;  // threshold to tell if it is moving or not
-static uint16_t fastAmpsThresh = 120;  // threshold to tell if it is moving or not
+static uint16_t fastAmpsThresh = 80;  // threshold to tell if it is moving or not
 static uint16_t slowAmpsThresh = 50;  // threshold to tell if it is moving or not
 static uint16_t error;
 static uint16_t hysterisisDeg = 20; // these are in integers so that we can
@@ -998,7 +998,8 @@ int main(void) {
 	  }
 
 
-	  chprintf(&SD1,"Angle:%.2f amps:%.2f volts%.2f setPoint:%.2f startMove:%d run:%d strain:%d stall:%d error:%d E:%d W:%d EL:%d WL:%d\r\n",currentAngle,currentAmps,VDD,setPoint,startMove,running,strainSeconds,stallSeconds,error,goingEast,goingWest,eastLimit,westLimit);
+	  //chprintf(&SD1,"Angle:%.2f amps:%.2f volts%.2f setPoint:%.2f startMove:%d run:%d strain:%d stall:%d error:%d E:%d W:%d EL:%d WL:%d\r\n",currentAngle,currentAmps,VDD,setPoint,startMove,running,strainSeconds,stallSeconds,error,goingEast,goingWest,eastLimit,westLimit);
+	  chprintf(&SD1,"%.2f,%.2f,%.2f \r\n",currentAngle,currentAngle1,currentAngle2);
 	  speed = floor(currentAngle*10 - lastAngle*10);
 	  currentSpeed = currentSpeed*0.9 + (currentAngle-lastAngle)*0.1;
 	  deg = floor(currentAngle*10);

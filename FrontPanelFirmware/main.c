@@ -545,7 +545,7 @@ int main(void) {
     
   chprintf(&SD1,"test from printf \r\n");
   chprintf((BaseSequentialStream*)&SD1,"After start thread\r\n");
-  chThdSleepMilliseconds(1000);
+  chThdSleepMilliseconds(500);
 
 
 
@@ -553,6 +553,7 @@ int main(void) {
   chprintf((BaseSequentialStream*)&SD1,"After set pad Init\r\n");
 
   init_spi();
+  chThdSleepMilliseconds(500);
   chprintf((BaseSequentialStream*)&SD1,"SPI init\r\n");
   init_oled();
   chprintf((BaseSequentialStream*)&SD1,"OLED init\r\n");
