@@ -28,7 +28,7 @@
 
 // Create our initial arrays - I don't want this stuff on the stack
 
-
+static uint16_t *flash1 = 0x803F000;
 
 #define ADC_GRP1_NUM_CHANNELS   2
 
@@ -39,6 +39,7 @@ static adcsample_t samples1[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 static uint8_t txbuf[10];
 static uint8_t rxbuf[10];
 static uint8_t step;
+static uint8_t x;
 static uint8_t mode = 0; // 0 = auto 1 = manual
 static float currentAngle1;
 static float currentAngle2;
@@ -48,7 +49,7 @@ static float maxAmps = 0.0;
 static float currentAmps;
 static float lastAngle;
 static float setPoint;
-
+static uint8_t reset =0;
 static mailbox_t RxMbx;
 #define MAILBOX_SIZE 25
 static msg_t RxMbxBuff[MAILBOX_SIZE];
@@ -63,6 +64,7 @@ static uint16_t stallSeconds =0;
 static uint16_t strainSeconds =0;
 static int16_t deg,speed,setpoint =0;
 static float currentSpeed = 0.0;
+static uint16_t parameters[10];
 static float speedThresh = .01;  // threshold to tell if it is moving or not
 static uint16_t fastAmpsThresh = 80;  // threshold to tell if it is moving or not
 static uint16_t slowAmpsThresh = 50;  // threshold to tell if it is moving or not
@@ -71,6 +73,8 @@ static uint16_t hysterisisDeg = 20; // these are in integers so that we can
                                     // maybe set them via modbus later
 static uint16_t stopDeg = 430;
 static uint16_t stoptime = 66;
+static uint16_t angleMode = 0;
+static uint16_t angleDiff = 50;
 static uint16_t running;
 static uint8_t startMove;
 static uint8_t eastLimit;
@@ -170,6 +174,76 @@ static const SPIConfig std_spicfg1 = {
   0,
   SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0                    /*CR2 register*/
 };
+
+
+
+void feedWatchdog(){
+    if (!reset)
+	wdgReset(&WDGD1);
+}
+
+
+void unlock_flash()
+{
+    if (FLASH->CR & FLASH_CR_LOCK){
+	FLASH->KEYR = 0x45670123;
+	FLASH->KEYR = 0xCDEF89AB;
+    }
+
+
+}
+
+
+void erase_flash(uint16_t *flash)
+{
+    int x;
+    unlock_flash();                        // must unlock flash before
+					   // any write operations
+
+    FLASH->CR |= FLASH_CR_PER;             // set page erase
+    
+    FLASH->AR = flash;                     // set page to flash
+    
+    FLASH->CR |= FLASH_CR_STRT;            // start erasing
+    
+    while ((FLASH->SR & FLASH_SR_BSY) == FLASH_SR_BSY); // loop till done
+							// watchdog should
+							// reset if it gets
+							// stuck
+
+    SET_BIT (FLASH->SR, (FLASH_SR_EOP));   // tech note RM0316 says to clear
+    CLEAR_BIT (FLASH->CR, (FLASH_CR_PER)); // found note online that you must
+                                           // clear this prior to writing
+    
+}
+
+
+void write_flash(uint16_t value,uint16_t* flash)
+{
+    int x;
+    //erase_flash(flash);
+
+
+      
+    SET_BIT(FLASH->CR, (FLASH_CR_PG));     // we are already unlocked, trying
+					   // to do it again will mess
+					   // things up
+    
+    *flash = value;                        // actually write the value
+    //memcpy(flash,value,2);
+
+    
+    while ((FLASH->SR & FLASH_SR_BSY) == FLASH_SR_BSY); // loop till done
+							// watchdog should
+							// reset if it gets
+							// stuck
+    CLEAR_BIT (FLASH->CR, (FLASH_CR_PG));  // probably don't need to to this
+					   // again
+    
+    SET_BIT (FLASH->SR, (FLASH_SR_EOP));   // tech note RM0316 says to clear
+}
+
+
 
 
 
@@ -389,6 +463,9 @@ static THD_FUNCTION(Thread4, arg) {
     int row;
     int col;
     int len;
+    uint16_t error;
+    uint16_t code;
+
     msg_t rxRow;
     msg_t rxPos;
     msg_t response;
@@ -396,109 +473,126 @@ static THD_FUNCTION(Thread4, arg) {
     uint16_t reg;
     int16_t value;
     while (TRUE)
-	{
-	    int16_t lclsetpoint;
-	    // the skip is because the way I have it hooked up right now
-	    // causes it to read whatever we send.
-	    chMBFetchTimeout(&RxMbx,&rxRow,TIME_INFINITE);
-	    rxPos = rxRow & 0xFF;
-	    rxRow = rxRow >> 8;
-	    memcpy(lcltext,rx_text[rxRow],rxPos);
-	    // if the message is for us and the CRC matches - otherwise -
-	    // ignore.
-
-            if ((lcltext[0] == my_address) &&
-		(*(uint16_t*)(lcltext+rxPos-2) == CRC16(lcltext,rxPos-2)))
-
-		{
+      {
+	int16_t lclsetpoint;
+	// the skip is because the way I have it hooked up right now
+	// causes it to read whatever we send.
+	chMBFetchTimeout(&RxMbx,&rxRow,TIME_INFINITE);
+	rxPos = rxRow & 0xFF;
+	rxRow = rxRow >> 8;
+	memcpy(lcltext,rx_text[rxRow],rxPos);
+	// if the message is for us and the CRC matches - otherwise -
+	// ignore.
+	
+	if ((lcltext[0] == my_address) &&
+	    (*(uint16_t*)(lcltext+rxPos-2) == CRC16(lcltext,rxPos-2)))
+	  
+	  {
 		    
-		    command = lcltext[1];		
-		    palSetPad(GPIOD,10);
-		    //chprintf((BaseSequentialStream*)&SD1,"+");
-		    reg = (lcltext[2]<<8)|lcltext[3];
-		    if ((command == 4)&&(reg==250))
-			{
-			    lcltext[0] = my_address;
-			    lcltext[1] = 4;
-			    lcltext[2] = 4;
-			    lcltext[3] = ((uint32_t)tstFloat & 0xFF000000 ) >> 24;
-			    lcltext[4] = ((uint32_t)tstFloat & 0xFF0000 ) >> 16;
-			    lcltext[5] = ((uint32_t)tstFloat & 0xFF00 ) >> 8;
-			    lcltext[6] = (uint32_t)tstFloat & 0xFF ;
+	    command = lcltext[1];		
+	    palSetPad(GPIOD,10);
+	    //chprintf((BaseSequentialStream*)&SD1,"+");
+	    reg = (lcltext[2]<<8)|lcltext[3];
+	    if ((command == 4)&&(reg==250)){
+	      lcltext[0] = my_address;
+	      lcltext[1] = 4;
+	      lcltext[2] = 4;
+	      lcltext[3] = ((uint32_t)tstFloat & 0xFF000000 ) >> 24;
+	      lcltext[4] = ((uint32_t)tstFloat & 0xFF0000 ) >> 16;
+	      lcltext[5] = ((uint32_t)tstFloat & 0xFF00 ) >> 8;
+	      lcltext[6] = (uint32_t)tstFloat & 0xFF ;
+	      
+	      *(uint16_t*)(lcltext+7) = CRC16(lcltext,7);
+	      lcltext[9] = 0;
+	      sdWrite(&SD3,lcltext,9);
+	      
+	    }
+	    if (command == 6){
+	      reg = (lcltext[2]<<8)|lcltext[3];
+	      error = 2;
+	      if ((reg >999) && (reg <1010)){
+		parameters[reg-1000] = (lcltext[4]<<8)|lcltext[5];
+		chprintf(&SD1,"Hello World - set register %d to   %d\r\n",reg,parameters[reg-1000]);
+		error = 0;
+	      }
+	      else if (reg == 1234){
+		// 1 for 19200 anything else is 9600
+		// throw error if not 0 or 1
+		
+		code =  (lcltext[4]<<8)|lcltext[5];
+		if (code==0x1234){
+		  for (x=0;x<10;x++)
+		    write_flash(parameters[x],flash1+x);
+		  reset = 1;
+		}
+		else
+		  error = 0x04;
+	      }			   
+	      else
+		error = 0x02;
 
-			    *(uint16_t*)(lcltext+7) = CRC16(lcltext,7);
-			    lcltext[9] = 0;
-			    sdWrite(&SD3,lcltext,9);
-			    
-			}
-
-
-		    if (command == 4)
-			{
-
-			    value = step;
-			    if (reg==1)
-				value = deg;
-			    if (reg==2)
-				value = speed;
-			    if (reg==3)
-				value = setPoint*10.0;
-
-			    lcltext[0] = my_address;
-			    lcltext[1] = 4;
-			    lcltext[2] = 2;
-			    lcltext[3] = (value & 0xFF00 ) >> 8;
-			    lcltext[4] = value & 0xFF ;
-			    *(uint16_t*)(lcltext+5) = CRC16(lcltext,5);
-			    lcltext[7] = 0;
-			    sdWrite(&SD3,lcltext,7);
-			}
-		    if (command == 6)
-			{			    
-			    reg = (lcltext[2]<<8)|lcltext[3];
-			    if (reg==3)
-				{
-				    lclsetpoint = lcltext[4]<<8|lcltext[5];
-				    setPoint = lclsetpoint / 10.0;
-				    startMove = 1;
-				}
-			    if (reg==4)
-				{
-				    
-				    error = 0;
-				    
-				}
-
-			    sdWrite(&SD3,lcltext,rxPos);
-			}
+	      if (error==0){
+		// for this command we just repeat the same thing
+		//back to them
+		sdWrite(&SD2,lcltext,8);
+	      }
+	      else{
+		lcltext[0] = my_address;
+		lcltext[1] = 0x86;
+		lcltext[2] = error;
+		*(uint16_t*)(lcltext+3) = CRC16(lcltext,3);
+		lcltext[5] = 0;
+		sdWrite(&SD2,lcltext,5);
+	      }
+	  }
+	else if (command == 4)
+	  {
+	    
+	    value = step;
+	    if (reg==1)
+	      value = deg;
+	    if (reg==2)
+	      value = speed;
+	    if (reg==3)
+	      value = setPoint*10.0;
+	    
+	    lcltext[0] = my_address;
+	    lcltext[1] = 4;
+	    lcltext[2] = 2;
+	    lcltext[3] = (value & 0xFF00 ) >> 8;
+	    lcltext[4] = value & 0xFF ;
+	    *(uint16_t*)(lcltext+5) = CRC16(lcltext,5);
+	    lcltext[7] = 0;
+	    sdWrite(&SD3,lcltext,7);
+	  }
 
 
 
 			
-		    //chprintf((BaseSequentialStream*)&SD1,"Queue not empty %X %x %x\r\n",SD3.oqueue.q_counter,SD3.oqueue.q_rdptr,SD3.oqueue.q_wrptr);
-		    //chprintf((BaseSequentialStream*)&SD1,"command %d - register %d, %d\r\n",lcltext[1],reg,value);
-		    // I've been having problems with this - setting it too
-		    // short causes truncated communications back to the
-		    // PLC - I should really find a way to trigger it once the
-		    // call co sdWrite is done.chOQIsEmptyI
+	    //chprintf((BaseSequentialStream*)&SD1,"Queue not empty %X %x %x\r\n",SD3.oqueue.q_counter,SD3.oqueue.q_rdptr,SD3.oqueue.q_wrptr);
+	    //chprintf((BaseSequentialStream*)&SD1,"command %d - register %d, %d\r\n",lcltext[1],reg,value);
+	    // I've been having problems with this - setting it too
+	    // short causes truncated communications back to the
+	    // PLC - I should really find a way to trigger it once the
+	    // call co sdWrite is done.chOQIsEmptyI
+	    
+	    while (!(oqIsEmptyI(&(&SD3)->oqueue)))
+	      {
+		//chprintf((BaseSequentialStream*)&SD1,".");
+		chThdSleepMilliseconds(1);
+	      }
+	    
+	    chThdSleepMilliseconds(2);
+	    palClearPad(GPIOD,10);
+	    //chThdSleepMilliseconds(1);
+	    //chprintf((BaseSequentialStream*)&SD1,"-");
+	    //hprintf(&SD1,lcltext);
+	    //skip_next = 0;
+	  }
+	
+      }
 
-		    while (!(oqIsEmptyI(&(&SD3)->oqueue)))
-		    {
-			//chprintf((BaseSequentialStream*)&SD1,".");
-		    	chThdSleepMilliseconds(1);
-		    }
-
-		    chThdSleepMilliseconds(2);
-		    palClearPad(GPIOD,10);
-		    //chThdSleepMilliseconds(1);
-		    //chprintf((BaseSequentialStream*)&SD1,"-");
-		    //hprintf(&SD1,lcltext);
-		    //skip_next = 0;
-		}
-
-	}
-
-    }
+}
 
 void requestAngle(){
     char lcltext[32] = {0x01,0x03,0x00,0x00,0x00,0x02,0xc4,0x0b,0x00,0x00};
@@ -704,7 +798,8 @@ int main(void) {
   pwmStart(&PWMD1, &pwmcfg);
   palSetPad(GPIOB, 5);
   wdgStart(&WDGD1, &wdgcfg);
-  wdgReset(&WDGD1);
+  feedWatchdog();
+
   chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
   chMBObjectInit(&RxMbx2,&RxMbx2Buff,MAILBOX_SIZE);
   chMBObjectInit(&SSMbx,&SSMbxBuff,MAILBOX_SIZE);
@@ -721,7 +816,6 @@ int main(void) {
   palSetPadMode(GPIOE, 6, PAL_MODE_OUTPUT_PUSHPULL);
   stopTracker();
   
-
 
 
   
@@ -769,7 +863,47 @@ int main(void) {
   sdStart(&SD3, &uartCfg2);
   sdStart(&SD4, &uartCfg2);
   
-    // chprintf((BaseSequentialStream*)&SD2,"Hello World 2\r\n");
+
+  if (*flash1 == 0xffff){
+    parameters[0]= fastAmpsThresh;
+    parameters[1]= slowAmpsThresh;
+    parameters[2] = hysterisisDeg;
+    parameters[3] = stopDeg;
+    parameters[4] = stoptime;
+    parameters[5] = angleMode;
+    parameters[6] = angleDiff;
+    chprintf((BaseSequentialStream*)&SD1,"Resetting Flash -\r\n");
+    erase_flash(flash1);
+    for (x=0;x<10;x++)
+      chprintf((BaseSequentialStream*)&SD1,"Writing Flash %d = %d -\r\n",x,parameters[x]);
+
+    for (x=0;x<10;x++)
+      write_flash(parameters[x],flash1+x);
+    
+  }
+  else{
+      // flash has been written - use those values
+      // init saved values in case we only choose to reset
+      // just id or just address later.
+    chprintf((BaseSequentialStream*)&SD1,"Getting Flash -\r\n");
+    memcpy(parameters,flash1,20);
+    fastAmpsThresh = parameters[0];
+    slowAmpsThresh = parameters[1];
+    hysterisisDeg = parameters[2];
+    stopDeg = parameters[3];
+    stoptime = parameters[4];
+    angleMode = parameters[5];
+    angleDiff = parameters[6];
+    for (x=0;x<10;x++)
+      chprintf((BaseSequentialStream*)&SD1,"Getting Flash %d = %d -\r\n",x,parameters[x]);
+    //erase_flash(flash1);
+  }
+
+  
+
+
+
+  // chprintf((BaseSequentialStream*)&SD2,"Hello World 2\r\n");
   chprintf((BaseSequentialStream*)&SD1,"Hello World - I am # %d\r\n",my_address);
   //  palSetPadMode(GPIOA, 0, PAL_MODE_OUTPUT_PUSHPULL);
   //palSetPadMode(GPIOA, 1, PAL_MODE_OUTPUT_PUSHPULL);        
@@ -839,8 +973,8 @@ int main(void) {
   
   while (TRUE)
       {
+	feedWatchdog();
 
-	  wdgReset(&WDGD1);
 	  currentAngle = (currentAngle1 + currentAngle2)/2;
 	  westLimit = !(palReadPad(GPIOE,3));
 	  eastLimit = !(palReadPad(GPIOE,4));
