@@ -520,10 +520,13 @@ static THD_FUNCTION(Thread4, arg) {
 		// throw error if not 0 or 1
 		
 		code =  (lcltext[4]<<8)|lcltext[5];
+		chprintf(&SD1,"Write Flash\r\n");
 		if (code==0x1234){
+		  erase_flash(flash1);
 		  for (x=0;x<10;x++)
 		    write_flash(parameters[x],flash1+x);
 		  reset = 1;
+		  error=0;
 		}
 		else
 		  error = 0x04;
@@ -534,7 +537,8 @@ static THD_FUNCTION(Thread4, arg) {
 	      if (error==0){
 		// for this command we just repeat the same thing
 		//back to them
-		sdWrite(&SD2,lcltext,8);
+		chprintf(&SD1,"Reply Success!!\r\n");
+		sdWrite(&SD3,lcltext,8);
 	      }
 	      else{
 		lcltext[0] = my_address;
@@ -542,7 +546,8 @@ static THD_FUNCTION(Thread4, arg) {
 		lcltext[2] = error;
 		*(uint16_t*)(lcltext+3) = CRC16(lcltext,3);
 		lcltext[5] = 0;
-		sdWrite(&SD2,lcltext,5);
+		chprintf(&SD1,"Reply Error!!\r\n");
+		sdWrite(&SD3,lcltext,5);
 	      }
 	  }
 	else if (command == 4)

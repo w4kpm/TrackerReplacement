@@ -83,6 +83,44 @@ def change_tracker_setpoint(modbusid,serialport,setpoint):
     instrument.close()
 
 
+def change_tracker_parameter(modbusid,serialport,parameter,setpoint):
+    instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
+
+    builder = BinaryPayloadBuilder(byteorder=Endian.Big)
+
+    builder.add_16bit_int(setpoint)
+    payload = builder.build()
+    #print(payload)
+
+    #print(payload[0][0])
+    #print(payload[0][1])
+    
+    pld = payload[0][1]|(payload[0][0]<<8)
+    
+    instrument.connect()
+    instrument.write_register(1000+parameter,pld,unit=modbusid,timeout=.1)
+    instrument.close()
+    
+
+def commit_tracker_parameter(modbusid,serialport):
+    instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
+
+    builder = BinaryPayloadBuilder(byteorder=Endian.Big)
+
+    builder.add_16bit_int(0x1234)
+    payload = builder.build()
+    #print(payload)
+
+    #print(payload[0][0])
+    #print(payload[0][1])
+    
+    pld = payload[0][1]|(payload[0][0]<<8)
+    
+    instrument.connect()
+    instrument.write_register(1234,pld,unit=modbusid,timeout=.1)
+    instrument.close()
+
+    
 
 def reset_tracker_error(modbusid,serialport,setpoint):
     instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
@@ -124,12 +162,15 @@ def change_sensor_id(modbusid,serialport,id):
 
     
 
-#print(readmodbus(16,3,'sint',4,'/dev/ttyUSB0'))
+print(readmodbus(16,3,'sint',4,'/dev/ttyUSB1'))
 #reset_tracker_error(16,'/dev/ttyUSB0',0)
 #change_tracker_setpoint(16,'/dev/ttyUSB0',50)
 
+change_tracker_parameter(16,'/dev/ttyUSB1',0,70)
+#commit_tracker_parameter(16,'/dev/ttyUSB1')
+
 #readmodbus(1,1,'sint',4,'/dev/ttyUSB0')
-print(readmodbus(2,0,'long',3,'/dev/ttyUSB0'))
+#print(readmodbus(2,0,'long',3,'/dev/ttyUSB0'))
 #readmodbus(1,0,'long',3,'/dev/ttyUSB0')
 #change_sensor_id(1,'/dev/ttyUSB0',2)
 #readmodbus(2,1,'sint',4,'/dev/ttyUSB0')
