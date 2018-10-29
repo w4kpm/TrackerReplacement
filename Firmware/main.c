@@ -459,11 +459,10 @@ static THD_FUNCTION(Thread4, arg) {
     char text[255];
     char lcltext[32];
     uint8_t command;
-    float tstFloat = 123.45;
     int row;
     int col;
     int len;
-    uint16_t error;
+    uint16_t lclError;
     uint16_t code;
 
     msg_t rxRow;
@@ -493,31 +492,34 @@ static THD_FUNCTION(Thread4, arg) {
 	    palSetPad(GPIOD,10);
 	    //chprintf((BaseSequentialStream*)&SD1,"+");
 	    reg = (lcltext[2]<<8)|lcltext[3];
-	    if ((command == 4)&&(reg==250)){
-	      lcltext[0] = my_address;
-	      lcltext[1] = 4;
-	      lcltext[2] = 4;
-	      lcltext[3] = ((uint32_t)tstFloat & 0xFF000000 ) >> 24;
-	      lcltext[4] = ((uint32_t)tstFloat & 0xFF0000 ) >> 16;
-	      lcltext[5] = ((uint32_t)tstFloat & 0xFF00 ) >> 8;
-	      lcltext[6] = (uint32_t)tstFloat & 0xFF ;
-	      
-	      *(uint16_t*)(lcltext+7) = CRC16(lcltext,7);
-	      lcltext[9] = 0;
-	      sdWrite(&SD3,lcltext,9);
-	      
-	    }
 	    if (command == 6){
 	      reg = (lcltext[2]<<8)|lcltext[3];
-	      error = 2;
+	      lclError = 2;
+	      if (reg==3){
+		skip_next=0;
+		// OK - we are setting the setpoint - but we have a number of preconditions:
+		// 1) don't do this if we are in manual mode
+		// 2) don't do anything if there is an error condition
+		// 3) don't update the setpoint if we are not beyond or hysterisis point
+		lclsetpoint = lcltext[4]<<8|lcltext[5];
+		if (mode==1) skip_next = 1;
+		if (error) skip_next=1;
+		if (abs(lclsetpoint-setPoint*10) < hysterisisDeg) skip_next = 1;
+		if (!skip_next){		  
+		  setPoint = lclsetpoint / 10.0;
+		  startMove = 1;
+		}
+		sdWrite(&SD2,lcltext,rxPos);	      
+	      }
+	      
 	      if ((reg >999) && (reg <1010)){
 		parameters[reg-1000] = (lcltext[4]<<8)|lcltext[5];
 		chprintf(&SD1,"Hello World - set register %d to   %d\r\n",reg,parameters[reg-1000]);
-		error = 0;
+		lclError = 0;
 	      }
 	      else if (reg == 1234){
 		// 1 for 19200 anything else is 9600
-		// throw error if not 0 or 1
+		// throw lclError if not 0 or 1
 		
 		code =  (lcltext[4]<<8)|lcltext[5];
 		chprintf(&SD1,"Write Flash\r\n");
@@ -526,15 +528,15 @@ static THD_FUNCTION(Thread4, arg) {
 		  for (x=0;x<10;x++)
 		    write_flash(parameters[x],flash1+x);
 		  reset = 1;
-		  error=0;
+		  lclError=0;
 		}
 		else
-		  error = 0x04;
+		  lclError = 0x04;
 	      }			   
 	      else
-		error = 0x02;
+		lclError = 0x02;
 
-	      if (error==0){
+	      if (lclError==0){
 		// for this command we just repeat the same thing
 		//back to them
 		chprintf(&SD1,"Reply Success!!\r\n");
@@ -543,7 +545,7 @@ static THD_FUNCTION(Thread4, arg) {
 	      else{
 		lcltext[0] = my_address;
 		lcltext[1] = 0x86;
-		lcltext[2] = error;
+		lcltext[2] = lclError;
 		*(uint16_t*)(lcltext+3) = CRC16(lcltext,3);
 		lcltext[5] = 0;
 		chprintf(&SD1,"Reply Error!!\r\n");
@@ -789,7 +791,7 @@ uint8_t encodePos(int pos){
 int main(void) {
   unsigned i;
   float VDD;
-  
+  uint8_t count;
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -986,7 +988,17 @@ int main(void) {
 	  
 	  if (error){
 	      stopTracker();
-	      
+	      count ++;
+	      if (count%1==0){
+		chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(0));
+		chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(1));
+	      } else {
+		chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(0));
+		chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(1));	      
+	      }
+	  } else {
+	    chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(0));
+	    chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(1));
 	  }
 	  
 	  if (goingEast && (currentAngle > setPoint)){

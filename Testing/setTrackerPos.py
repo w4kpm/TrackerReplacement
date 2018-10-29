@@ -164,9 +164,9 @@ def change_sensor_id(modbusid,serialport,id):
 
 print(readmodbus(16,3,'sint',4,'/dev/ttyUSB1'))
 #reset_tracker_error(16,'/dev/ttyUSB0',0)
-#change_tracker_setpoint(16,'/dev/ttyUSB0',50)
+change_tracker_setpoint(16,'/dev/ttyUSB0',50)
 
-change_tracker_parameter(16,'/dev/ttyUSB1',0,70)
+#change_tracker_parameter(16,'/dev/ttyUSB1',0,70)
 #commit_tracker_parameter(16,'/dev/ttyUSB1')
 
 #readmodbus(1,1,'sint',4,'/dev/ttyUSB0')
