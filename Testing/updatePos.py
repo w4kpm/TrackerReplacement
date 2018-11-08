@@ -2,7 +2,7 @@ from pymodbus.client.sync import ModbusSerialClient
 from pymodbus.constants import Endian
 from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.payload import BinaryPayloadBuilder
-
+import time
 
 
 def readmodbus(modbusid,register,fieldtype,readtype,serialport):
@@ -60,48 +60,45 @@ def readmodbus(modbusid,register,fieldtype,readtype,serialport):
     return x
 
 
+def generic_tracker_update(modbusid,serialport,setpoint,register):
+    instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
+
+    builder = BinaryPayloadBuilder(byteorder=Endian.Big)
+
+    builder.add_16bit_int(setpoint)
+    payload = builder.build()
+    
+    pld = payload[0][1]|(payload[0][0]<<8)
+    
+    instrument.connect()
+    instrument.write_register(register,pld,unit=modbusid,timeout=.1)
+    instrument.close()
+
+
 def change_tracker_setpoint(modbusid,serialport,setpoint):
-    instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
-
-    builder = BinaryPayloadBuilder(byteorder=Endian.Big)
-
-    builder.add_16bit_int(setpoint)
-    payload = builder.build()
-    #print(payload)
-
-    #print(payload[0][0])
-    #print(payload[0][1])
-    
-    pld = payload[0][1]|(payload[0][0]<<8)
-    
-    instrument.connect()
-    instrument.write_register(3,pld,unit=modbusid,timeout=.1)
-    instrument.close()
+    generic_tracker_update(modbusid,serialport,setpoint,3)
 
 
+def reset_tracker_error(modbusid,serialport):
+    generic_tracker_update(modbusid,serialport,0,7)
 
-def reset_tracker_error(modbusid,serialport,setpoint):
-    instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
 
-    builder = BinaryPayloadBuilder(byteorder=Endian.Big)
+def reset_tracker_maxamps(modbusid,serialport):
+    generic_tracker_update(modbusid,serialport,0,8)
 
-    builder.add_16bit_int(setpoint)
-    payload = builder.build()
-    #print(payload)
+def set_tracker_mode(modbusid,serialport,mode):
+    """ 0 for normal, 1 for manual"""
+    generic_tracker_update(modbusid,serialport,mode,4)
 
-    #print(payload[0][0])
-    #print(payload[0][1])
-    
-    pld = payload[0][1]|(payload[0][0]<<8)
-    
-    instrument.connect()
-    instrument.write_register(4,pld,unit=modbusid,timeout=.1)
-    instrument.close()
+def set_tracker_anglemode(modbusid,serialport,mode):
+    """ 0 for both 1 for sensor 1 2 for sensor 2"""
+    generic_tracker_update(modbusid,serialport,mode,5)
 
 
 def change_sensor_id(modbusid,serialport,id):
+    """ this is to change the ID of one of the angle sensors"""
     instrument = ModbusSerialClient(method ='rtu',port=serialport,baudrate=9600)
-
+    
     builder = BinaryPayloadBuilder(byteorder=Endian.Big)
 
     builder.add_16bit_int(id)
@@ -121,9 +118,14 @@ def change_sensor_id(modbusid,serialport,id):
     
 
 print(readmodbus(16,3,'sint',4,'/dev/ttyUSB1'))
-reset_tracker_error(16,'/dev/ttyUSB1',0)
-change_tracker_setpoint(16,'/dev/ttyUSB1',75)
-
+#reset_tracker_error(16,'/dev/ttyUSB1',0)
+reset_tracker_maxamps(16,'/dev/ttyUSB1')
+set_tracker_anglemode(16,'/dev/ttyUSB1',0)
+reset_tracker_error(16,'/dev/ttyUSB1')
+change_tracker_setpoint(16,'/dev/ttyUSB1',-105)
+for x in range(1000):
+    print(readmodbus(16,13,'sint',4,'/dev/ttyUSB1'),readmodbus(16,1,'sint',4,'/dev/ttyUSB1'),readmodbus(16,8,'sint',4,'/dev/ttyUSB1'),readmodbus(16,7,'sint',4,'/dev/ttyUSB1'))
+    time.sleep(.1)
 #readmodbus(1,1,'sint',4,'/dev/ttyUSB0')
 #change_sensor_id(1,'/dev/ttyUSB0',2)
 #readmodbus(1,1,'sint',4,'/dev/ttyUSB0')

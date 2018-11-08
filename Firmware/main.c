@@ -26,6 +26,18 @@
 #include <string.h>
 #include "stm32f3xx.h"
 
+#define NO_ERROR 0
+#define BAD_REGISTER 2
+#define BAD_VALUE 3
+
+#define STRAIN_ERROR 1
+#define FAST_BLOW_ERROR 2
+#define EAST_LIMIT_ERROR 3 
+#define WEST_LIMIT_ERROR 4
+#define STALL_ERROR 5
+#define ANGLE_DIFF_ERROR 6
+#define EAST_ANGLE_EXCEED_ERROR 7
+#define WEST_ANGLE_EXCEED_ERROR 8
 // Create our initial arrays - I don't want this stuff on the stack
 
 static uint16_t *flash1 = 0x803F000;
@@ -39,6 +51,7 @@ static adcsample_t samples1[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 static uint8_t txbuf[10];
 static uint8_t rxbuf[10];
 static uint8_t step;
+static uint8_t angleCount =0;
 static uint8_t x;
 static uint8_t mode = 0; // 0 = auto 1 = manual
 static float currentAngle1;
@@ -71,7 +84,7 @@ static uint16_t slowAmpsThresh = 50;  // threshold to tell if it is moving or no
 static uint16_t error;
 static uint16_t hysterisisDeg = 20; // these are in integers so that we can
                                     // maybe set them via modbus later
-static uint16_t stopDeg = 430;
+static uint16_t stopDeg = 445;
 static uint16_t stoptime = 66;
 static uint16_t angleMode = 0;
 static uint16_t angleDiff = 50;
@@ -494,33 +507,68 @@ static THD_FUNCTION(Thread4, arg) {
 	    reg = (lcltext[2]<<8)|lcltext[3];
 	    if (command == 6){
 	      reg = (lcltext[2]<<8)|lcltext[3];
-	      lclError = 2;
+	      lclError = BAD_REGISTER;
 	      if (reg==3){
 		skip_next=0;
 		// OK - we are setting the setpoint - but we have a number of preconditions:
 		// 1) don't do this if we are in manual mode
-		// 2) don't do anything if there is an error condition
+		// 2) don't do anything if there is an error condition (unless we exceeded the stop angle or the limit switches
+		//        then we should be able to move the opposite direction)
 		// 3) don't update the setpoint if we are not beyond or hysterisis point
 		lclsetpoint = lcltext[4]<<8|lcltext[5];
+		chprintf((BaseSequentialStream*)&SD1,"%d/r/n",lclsetpoint);
+		lclError = NO_ERROR;
 		if (mode==1) skip_next = 1;
-		if (error) skip_next=1;
-		if (abs(lclsetpoint-setPoint*10) < hysterisisDeg) skip_next = 1;
+		if (error)
+		  skip_next=1;
+		if (abs(lclsetpoint-deg) < hysterisisDeg) skip_next = 1;
+		if (abs(lclsetpoint) > stopDeg)
+		  lclError= BAD_VALUE;
 		if (!skip_next){		  
 		  setPoint = lclsetpoint / 10.0;
 		  startMove = 1;
 		}
-		sdWrite(&SD2,lcltext,rxPos);	      
+
+	      }
+	      if (reg==4){
+		lclsetpoint = lcltext[4]<<8|lcltext[5];
+		if ((lclsetpoint == 0)|(lclsetpoint ==1)){
+		  lclError =NO_ERROR;
+		  mode = lclsetpoint;
+		} else {
+		  lclError = BAD_VALUE;
+		}
+	      }
+	      if (reg==5){
+		lclsetpoint = lcltext[4]<<8|lcltext[5];
+		if ((lclsetpoint == 0)|(lclsetpoint ==1)|(lclsetpoint==2)){
+		  lclError =NO_ERROR;
+		  angleMode = lclsetpoint;
+		} else {
+		  lclError = BAD_VALUE;
+		}
+	      }
+
+	      if (reg==7){
+		// reset error
+		error = NO_ERROR;
+		lclError =NO_ERROR;
+	      }
+
+	      if (reg==8){
+		// reset max Amps 
+		maxAmps = 0;
+		lclError =NO_ERROR;
 	      }
 	      
 	      if ((reg >999) && (reg <1010)){
+		// update a parameter to be stored in flash (or temporary if not written to flash)
 		parameters[reg-1000] = (lcltext[4]<<8)|lcltext[5];
 		chprintf(&SD1,"Hello World - set register %d to   %d\r\n",reg,parameters[reg-1000]);
-		lclError = 0;
+		lclError = NO_ERROR;
 	      }
-	      else if (reg == 1234){
-		// 1 for 19200 anything else is 9600
-		// throw lclError if not 0 or 1
-		
+	      if (reg == 1234){
+		// write parameters to flash - value must be hex 0x1234
 		code =  (lcltext[4]<<8)|lcltext[5];
 		chprintf(&SD1,"Write Flash\r\n");
 		if (code==0x1234){
@@ -528,13 +576,11 @@ static THD_FUNCTION(Thread4, arg) {
 		  for (x=0;x<10;x++)
 		    write_flash(parameters[x],flash1+x);
 		  reset = 1;
-		  lclError=0;
+		  lclError=NO_ERROR;
 		}
 		else
-		  lclError = 0x04;
+		  lclError = BAD_VALUE;
 	      }			   
-	      else
-		lclError = 0x02;
 
 	      if (lclError==0){
 		// for this command we just repeat the same thing
@@ -562,7 +608,23 @@ static THD_FUNCTION(Thread4, arg) {
 	      value = speed;
 	    if (reg==3)
 	      value = setPoint*10.0;
+	    if (reg==4)
+	      value = mode;
+	    if (reg==5)
+	      value = currentAngle1*10.0;
+	    if (reg==6)
+	      value = currentAngle2*10.0;
+	    if (reg==7)
+	      value = currentAmps*10.0;
+	    if (reg==8)
+	      value = maxAmps*10.0;
+	    if (reg==13)
+	      value = error;
 	    
+	    if ((reg >999) && (reg <1010)){
+		// return parameter as it currently is whether it is written to flash or not. 
+	      value = parameters[reg-1000];
+	    }
 	    lcltext[0] = my_address;
 	    lcltext[1] = 4;
 	    lcltext[2] = 2;
@@ -788,10 +850,31 @@ uint8_t encodePos(int pos){
 }
 
 
+void updateAngles(){
+    if (angleMode ==0)
+      currentAngle = (currentAngle1 + currentAngle2)/2;currentAngle1;
+  if (angleMode ==1)
+    currentAngle = currentAngle1;
+  if (angleMode ==2)
+    currentAngle = currentAngle2;
+  if (angleMode == 0){
+    angleCount = angleCount++;
+    if (angleCount>20)
+      angleCount = 20;
+    //angleCount = max(20,angleCount++);
+    if ((((currentAngle1-currentAngle2)*10.0)>angleDiff)&&(angleCount > 10)){
+      error = ANGLE_DIFF_ERROR;
+      stopTracker();
+      chprintf(&SD2,"@%c%cAngleErr \r\n",encodePos(1),encodePos(10));
+    }
+  }
+}
+
 int main(void) {
   unsigned i;
   float VDD;
   uint8_t count;
+  
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -806,7 +889,7 @@ int main(void) {
   palSetPad(GPIOB, 5);
   wdgStart(&WDGD1, &wdgcfg);
   feedWatchdog();
-
+  my_address = palReadPort(GPIOD) & 0xFF;
   chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
   chMBObjectInit(&RxMbx2,&RxMbx2Buff,MAILBOX_SIZE);
   chMBObjectInit(&SSMbx,&SSMbxBuff,MAILBOX_SIZE);
@@ -954,18 +1037,6 @@ int main(void) {
   chprintf((BaseSequentialStream*)&SD1,"HelloD\r\n")  ;
 
 
-
-
-
-
-  
-
-
-
-  
-  
-  
-  
   chThdSleepMilliseconds(500);
   chprintf((BaseSequentialStream*)&SD1,"\r\n");
   //  chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
@@ -975,26 +1046,26 @@ int main(void) {
   chThdSleepMilliseconds(500);
   requestAngle();
   chThdSleepMilliseconds(500);
-  currentAngle = (currentAngle1 + currentAngle2)/2;
+  updateAngles();
   setPoint = lastAngle = currentAngle;
   
   while (TRUE)
       {
 	feedWatchdog();
+	updateAngles();
 
-	  currentAngle = (currentAngle1 + currentAngle2)/2;
 	  westLimit = !(palReadPad(GPIOE,3));
 	  eastLimit = !(palReadPad(GPIOE,4));
 	  
 	  if (error){
 	      stopTracker();
 	      count ++;
-	      if (count%1==0){
+	      if (count%2==0){
 		chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(0));
 		chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(1));
 	      } else {
-		chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(0));
-		chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(1));	      
+		chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(0));
+		chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(1));	      
 	      }
 	  } else {
 	    chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(0));
@@ -1003,32 +1074,34 @@ int main(void) {
 	  
 	  if (goingEast && (currentAngle > setPoint)){
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cStop \r\n",encodePos(1),encodePos(10));
+	      chprintf(&SD2,"@%c%cStop     \r\n",encodePos(1),encodePos(10));
 	  }
 	  if (goingWest && (currentAngle < setPoint)){
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cStop \r\n",encodePos(1),encodePos(10));
+	      chprintf(&SD2,"@%c%cStop     \r\n",encodePos(1),encodePos(10));
 	  }
 
 	  if ((startMove)&&(currentAngle<setPoint)){
 	      startMove = 0;
-	      chprintf(&SD2,"@%c%cEast \r\n",encodePos(1),encodePos(10));
+	      chprintf(&SD2,"@%c%cEast     \r\n",encodePos(1),encodePos(10));
 	      chprintf(&SD1,"Move East \r\n");
 	      goEast();
 	  }
 	  if ((startMove)&&(currentAngle>setPoint)){
 	      startMove = 0;
-	      chprintf(&SD2,"@%c%cWest \r\n",encodePos(1),encodePos(10));
+	      chprintf(&SD2,"@%c%cWest     \r\n",encodePos(1),encodePos(10));
 	      chprintf(&SD1,"Move West \r\n");
 
 	      goWest();
 	  }
 	  if (goingWest && (currentAngle < -stopDeg/10.0)){
-	      error = 1;
+	      error = WEST_ANGLE_EXCEED_ERROR;
+	      chprintf(&SD2,"@%c%cWExceed %d \r\n",encodePos(1),encodePos(10),error);
 	      stopTracker();
 	  }
 	  if (goingEast && (currentAngle > stopDeg/10.0)){
-	      error = 1;
+	      error = EAST_ANGLE_EXCEED_ERROR;
+	      chprintf(&SD2,"@%c%cEExceed %d \r\n",encodePos(1),encodePos(10),error);
 	      stopTracker();
 	  }
 
@@ -1039,9 +1112,9 @@ int main(void) {
 	      stallSeconds = 0;
 	  }
 	  if (running && (stallSeconds > stoptime)){
-	      error = 2;
+	      error = STALL_ERROR;
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cStall %d \r\n",encodePos(1),encodePos(10),error);
+	      chprintf(&SD2,"@%c%cStallErr %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 
 	  if (running && (currentAmps*10 > slowAmpsThresh)){
@@ -1051,24 +1124,24 @@ int main(void) {
 	      strainSeconds = 0;
 	  }
 	  if (running && (strainSeconds > stoptime)){
-	      error = 3;
+	      error = STRAIN_ERROR;
 	      stopTracker();
 	      chprintf(&SD2,"@%c%cStrain %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 	      
 	if (running && (currentAmps*10 > fastAmpsThresh)){
-	      error=4;
+	      error=FAST_BLOW_ERROR;
 	      stopTracker();
 	      chprintf(&SD2,"@%c%cOCurr %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 
 	  if (goingEast && eastLimit){
-	      error=5;
+	    error=EAST_LIMIT_ERROR;
 	      stopTracker();
 	      chprintf(&SD2,"@%c%cELimit %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 	  if (goingWest && westLimit){
-	      error=6;
+	      error=WEST_LIMIT_ERROR;
 	      stopTracker();
 	      chprintf(&SD2,"@%c%cWLimit %d \r\n",encodePos(1),encodePos(10),error);
 	  }
@@ -1104,7 +1177,8 @@ int main(void) {
 	  }
 	  if ((btn_state[3] == '1')&&(mode==1)){
 	      setPoint+=10;
-	      startMove = 1;
+	      if (error == 0)
+		startMove = 1;
 	      if (setPoint> 45) setPoint = 45;
 	  }
 	  if ((btn_state[7] == '1')&&(mode==1)){
@@ -1118,7 +1192,8 @@ int main(void) {
 	  
 	  if ((btn_state[1] == '1')&&(mode==1)){
 	      setPoint-=10;
-	      startMove = 1;
+	      if (error == 0)
+		startMove = 1;
 	      if (setPoint< -45) setPoint = -45;
 	  }
 
@@ -1126,13 +1201,15 @@ int main(void) {
 
 	  if ((btn_state[0] == '1')&&(mode==1)){
 	      setPoint+=1;
-	      startMove = 1;
+	      if (error == 0)
+		startMove = 1;
 	      if (setPoint> 45) setPoint = 45;
 	  }
 
 	  if ((btn_state[2] == '1')&&(mode==1)){
 	      setPoint-=1;
-	      startMove = 1;
+	      if (error == 0)
+		startMove = 1;
 	      if (setPoint< -45) setPoint = -45;
 	  }
 
