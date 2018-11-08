@@ -108,7 +108,7 @@ static int rx3_queue_pos=0;
 
 
 static uint8_t my_address = 0x10;
-
+static uint8_t inverted_address = 0;
 
 
 
@@ -889,7 +889,17 @@ int main(void) {
   palSetPad(GPIOB, 5);
   wdgStart(&WDGD1, &wdgcfg);
   feedWatchdog();
-  my_address = palReadPort(GPIOD) & 0xFF;
+  inverted_address = palReadPort(GPIOD) & 0xFF;
+  my_address = 0;
+  my_address |= (inverted_address & 0x01) << 7;
+  my_address |= (inverted_address & 0x02) << 5;
+  my_address |= (inverted_address & 0x04) << 3;
+  my_address |= (inverted_address & 0x08) << 1;
+  my_address |= (inverted_address & 0x10) >> 1;
+  my_address |= (inverted_address & 0x20) >> 3;
+  my_address |= (inverted_address & 0x30) >> 5;
+  my_address |= (inverted_address & 0x40) >> 7;
+  
   chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
   chMBObjectInit(&RxMbx2,&RxMbx2Buff,MAILBOX_SIZE);
   chMBObjectInit(&SSMbx,&SSMbxBuff,MAILBOX_SIZE);
