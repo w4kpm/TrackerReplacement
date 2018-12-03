@@ -38,6 +38,7 @@
 #define ANGLE_DIFF_ERROR 6
 #define EAST_ANGLE_EXCEED_ERROR 7
 #define WEST_ANGLE_EXCEED_ERROR 8
+#define EMERGENCY_STOP_ERROR 9
 // Create our initial arrays - I don't want this stuff on the stack
 
 static uint16_t *flash1 = 0x803F000;
@@ -78,12 +79,14 @@ static uint16_t strainSeconds =0;
 static int16_t deg,speed,setpoint =0;
 static float currentSpeed = 0.0;
 static uint16_t parameters[10];
-static float speedThresh = .01;  // threshold to tell if it is moving or not
+static float speedThresh = .1;  // threshold to tell if it is moving or not
 static uint16_t fastAmpsThresh = 80;  // threshold to tell if it is moving or not
 static uint16_t slowAmpsThresh = 50;  // threshold to tell if it is moving or not
 static uint16_t error;
 static uint16_t hysterisisDeg = 20; // these are in integers so that we can
                                     // maybe set them via modbus later
+
+static float travelQueue[20];
 static uint16_t stopDeg = 445;
 static uint16_t stoptime = 66;
 static uint16_t angleMode = 0;
@@ -461,6 +464,18 @@ uint8_t decode_pos(char pos)
   return pos - 32;
 }
 
+void startTracker(){
+  int x;
+  if (startMove ==0){
+    stallSeconds = 0;
+    strainSeconds = 0;
+    startMove = 1;
+    chprintf(&SD1,"ResetQueue,\r\n");	    
+    for (x=0;x<20;x++)
+      travelQueue[x]=currentAngle;
+  }
+}
+
     
 static THD_WORKING_AREA(waThread4, 2048);
 static THD_FUNCTION(Thread4, arg) {
@@ -518,15 +533,19 @@ static THD_FUNCTION(Thread4, arg) {
 		lclsetpoint = lcltext[4]<<8|lcltext[5];
 		chprintf((BaseSequentialStream*)&SD1,"%d/r/n",lclsetpoint);
 		lclError = NO_ERROR;
-		if (mode==1) skip_next = 1;
+		if (mode==1)
+		  skip_next = 1;
 		if (error)
 		  skip_next=1;
-		if (abs(lclsetpoint-deg) < hysterisisDeg) skip_next = 1;
-		if (abs(lclsetpoint) > stopDeg)
+		if (abs(lclsetpoint-(setPoint*10.0)) < hysterisisDeg)
+		  skip_next = 1;
+		if (abs(lclsetpoint) > stopDeg){
+		  skip_next = 1;
 		  lclError= BAD_VALUE;
+		}
 		if (!skip_next){		  
 		  setPoint = lclsetpoint / 10.0;
-		  startMove = 1;
+		  startTracker();
 		}
 
 	      }
@@ -836,9 +855,9 @@ void goEast(void){
 void goWest(void){
     palClearPad(GPIOE,5);
     palSetPad(GPIOE,6);
-    if (running==0)
+    if (running == 0)
 	chMBPostTimeout(&SSMbx,0,TIME_INFINITE); // let our mailbox know
-    running =1;
+    running = 1;
     goingEast = 0;
     goingWest = 1;
 
@@ -858,11 +877,11 @@ void updateAngles(){
   if (angleMode ==2)
     currentAngle = currentAngle2;
   if (angleMode == 0){
-    angleCount = angleCount++;
-    if (angleCount>20)
-      angleCount = 20;
+    angleCount = angleCount + 1;
+    if (angleCount>100)
+      angleCount = 100;
     //angleCount = max(20,angleCount++);
-    if ((((currentAngle1-currentAngle2)*10.0)>angleDiff)&&(angleCount > 10)){
+    if ((abs(((currentAngle1-currentAngle2)*10.0))>angleDiff)&&(angleCount > 90)){
       error = ANGLE_DIFF_ERROR;
       stopTracker();
       chprintf(&SD2,"@%c%cAngleErr \r\n",encodePos(1),encodePos(10));
@@ -888,17 +907,36 @@ int main(void) {
   pwmStart(&PWMD1, &pwmcfg);
   palSetPad(GPIOB, 5);
   wdgStart(&WDGD1, &wdgcfg);
+  sdStart(&SD1, &uartCfg);
+  sdStart(&SD2, &uartCfg);
+  sdStart(&SD3, &uartCfg2);
+  sdStart(&SD4, &uartCfg2);
+
+  palSetPadMode(GPIOD, 0, PAL_MODE_INPUT_PULLUP);   // address
+  palSetPadMode(GPIOD, 1, PAL_MODE_INPUT_PULLUP);   // address  
+  palSetPadMode(GPIOD, 2, PAL_MODE_INPUT_PULLUP);   // address
+  palSetPadMode(GPIOD, 3, PAL_MODE_INPUT_PULLUP);   // address  
+  palSetPadMode(GPIOD, 4, PAL_MODE_INPUT_PULLUP);   // address
+  palSetPadMode(GPIOD, 5, PAL_MODE_INPUT_PULLUP);   // address  
+  palSetPadMode(GPIOD, 6, PAL_MODE_INPUT_PULLUP);   // address
+  palSetPadMode(GPIOD, 7, PAL_MODE_INPUT_PULLUP);   // address  
+
+  
   feedWatchdog();
+  chprintf((BaseSequentialStream*)&SD1,"Hello World - I am # %d\r\n",palReadPort(GPIOD) & 0xFF);
   inverted_address = palReadPort(GPIOD) & 0xFF;
+
+
+
   my_address = 0;
-  my_address |= (inverted_address & 0x01) << 7;
-  my_address |= (inverted_address & 0x02) << 5;
-  my_address |= (inverted_address & 0x04) << 3;
-  my_address |= (inverted_address & 0x08) << 1;
-  my_address |= (inverted_address & 0x10) >> 1;
-  my_address |= (inverted_address & 0x20) >> 3;
-  my_address |= (inverted_address & 0x30) >> 5;
-  my_address |= (inverted_address & 0x40) >> 7;
+  my_address |= ((inverted_address & 0x01) << 7);
+  my_address |= ((inverted_address & 0x02) << 5);
+  my_address |= ((inverted_address & 0x04) << 3);
+  my_address |= ((inverted_address & 0x08) << 1);
+  my_address |= ((inverted_address & 0x10) >> 1);
+  my_address |= ((inverted_address & 0x20) >> 3);
+  my_address |= ((inverted_address & 0x40) >> 5);
+  my_address |= ((inverted_address & 0x80) >> 7);
   
   chMBObjectInit(&RxMbx,&RxMbxBuff,MAILBOX_SIZE);
   chMBObjectInit(&RxMbx2,&RxMbx2Buff,MAILBOX_SIZE);
@@ -930,6 +968,8 @@ int main(void) {
 
   palSetPadMode(GPIOE, 9, PAL_MODE_ALTERNATE(2));   // PWM   
 
+
+  
   palSetPadMode(GPIOD, 9, PAL_MODE_ALTERNATE(7));   // UART3 Loop  
   palSetPadMode(GPIOD, 8, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOD, 10, PAL_MODE_OUTPUT_PUSHPULL);
@@ -958,10 +998,6 @@ int main(void) {
 
 
   
-  sdStart(&SD1, &uartCfg);
-  sdStart(&SD2, &uartCfg);
-  sdStart(&SD3, &uartCfg2);
-  sdStart(&SD4, &uartCfg2);
   
 
   if (*flash1 == 0xffff){
@@ -1115,10 +1151,10 @@ int main(void) {
 	      stopTracker();
 	  }
 
-	  if (running && (fabs(currentSpeed) < speedThresh)){
+	  if (running && (currentSpeed < speedThresh)){
 	      stallSeconds = stallSeconds+1;
 	  }
-	  if (running && (fabs(currentSpeed) > speedThresh)){
+	  if (running && (currentSpeed > speedThresh)){
 	      stallSeconds = 0;
 	  }
 	  if (running && (stallSeconds > stoptime)){
@@ -1175,7 +1211,8 @@ int main(void) {
 	  chprintf(&SD2,"@%c%cA2:%.2f  \r\n",encodePos(2),encodePos(0),currentAngle2);
 	  chprintf(&SD2,"@%c%cA:%.2f  \r\n",encodePos(3),encodePos(0),maxAmps);
 	  chprintf(&SD2,"@%c%c%d  \r\n",encodePos(2),encodePos(10),stallSeconds);
-	  chprintf(&SD2,"@%c%c%s\r\n",encodePos(3),encodePos(8),btn_state);
+	  //chprintf(&SD2,"@%c%c%s\r\n",encodePos(3),encodePos(8),btn_state);
+	  chprintf(&SD2,"@%c%cID: %d    \r\n",encodePos(3),encodePos(8),my_address);
 	  //chprintf(&SD2,"@%c%cID:%d  \r\n",encodePos(0),encodePos(10),my_address);
 	  chprintf(&SD2,"@%c%cSpd:%0.2f  \r\n",encodePos(0),encodePos(9),currentSpeed);
 	  
@@ -1188,7 +1225,7 @@ int main(void) {
 	  if ((btn_state[3] == '1')&&(mode==1)){
 	      setPoint+=10;
 	      if (error == 0)
-		startMove = 1;
+		startTracker();
 	      if (setPoint> 45) setPoint = 45;
 	  }
 	  if ((btn_state[7] == '1')&&(mode==1)){
@@ -1203,7 +1240,7 @@ int main(void) {
 	  if ((btn_state[1] == '1')&&(mode==1)){
 	      setPoint-=10;
 	      if (error == 0)
-		startMove = 1;
+		startTracker();
 	      if (setPoint< -45) setPoint = -45;
 	  }
 
@@ -1212,20 +1249,27 @@ int main(void) {
 	  if ((btn_state[0] == '1')&&(mode==1)){
 	      setPoint+=1;
 	      if (error == 0)
-		startMove = 1;
+		startTracker();
 	      if (setPoint> 45) setPoint = 45;
 	  }
 
 	  if ((btn_state[2] == '1')&&(mode==1)){
 	      setPoint-=1;
 	      if (error == 0)
-		startMove = 1;
+		startTracker();
 	      if (setPoint< -45) setPoint = -45;
 	  }
 
 	  
 	  if ((btn_state[4] == '1')&&(mode==1))
 	      mode = 0;
+	  if ((btn_state[6] == '1')&&(mode==1))
+	    {
+	      error = EMERGENCY_STOP_ERROR;
+	      chprintf(&SD2,"@%c%cEStop  %d \r\n",encodePos(1),encodePos(10),error);
+	      stopTracker();	    
+	    }
+
 	  if (mode==1){
 	      chprintf(&SD2,"@%c%c1\r\d",encodePos(4),encodePos(2));
 	      chprintf(&SD2,"@%c%c0\r\d",encodePos(4),encodePos(3));
@@ -1237,9 +1281,19 @@ int main(void) {
 
 
 	  //chprintf(&SD1,"Angle:%.2f amps:%.2f volts%.2f setPoint:%.2f startMove:%d run:%d strain:%d stall:%d error:%d E:%d W:%d EL:%d WL:%d\r\n",currentAngle,currentAmps,VDD,setPoint,startMove,running,strainSeconds,stallSeconds,error,goingEast,goingWest,eastLimit,westLimit);
-	  chprintf(&SD1,"%.2f,%.2f,%.2f \r\n",currentAngle,currentAngle1,currentAngle2);
-	  speed = floor(currentAngle*10 - lastAngle*10);
-	  currentSpeed = currentSpeed*0.9 + (currentAngle-lastAngle)*0.1;
+	  //chprintf(&SD1,"%.2f,%.2f,%.2f --%d--%d \r\n",currentAngle,currentAngle1,currentAngle2,angleCount,angleMode);
+
+	  currentSpeed = travelQueue[9]-currentAngle;
+
+	  if (goingEast)
+	    currentSpeed = -currentSpeed;
+	  speed = currentSpeed * 10;
+	  for (x=0;x<9;x++){
+	    chprintf(&SD1,"%d:%.2f,",x,travelQueue[x]);	    
+	    travelQueue[9-x] = travelQueue[8-x];
+	  }
+	  chprintf(&SD1,"9:%.2f ---- %.2f -----   %.2f\r\n",travelQueue[9],currentAngle,currentSpeed);   
+	  travelQueue[0] = currentAngle;
 	  deg = floor(currentAngle*10);
 
 	  lastAngle = currentAngle;
