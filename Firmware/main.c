@@ -52,6 +52,7 @@ static adcsample_t samples1[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
 static uint8_t txbuf[10];
 static uint8_t rxbuf[10];
 static uint8_t step;
+static uint8_t angleStarted =0;
 static uint8_t angleCount =0;
 static uint8_t x;
 static uint8_t mode = 0; // 0 = auto 1 = manual
@@ -742,6 +743,11 @@ static THD_FUNCTION(Thread6, arg) {
 		    lclAngle = lcltext[3]*100+lcltext[4]+lcltext[5]*.01;
 		    lclAngle = lclAngle - 180.0;
 		    currentAngle1 = currentAngle1*.9 + lclAngle*.1;
+		    if (angleStarted ==0){
+		      angleStarted = 1;
+		      currentAngle1 = lclAngle;
+		      currentAngle2 = lclAngle;
+		    }
 		 
 		}
             if ((lcltext[0] == 2) &&
@@ -751,11 +757,15 @@ static THD_FUNCTION(Thread6, arg) {
 		    lclAngle = lcltext[3]*100+lcltext[4]+lcltext[5]*.01;
 		    lclAngle = lclAngle - 180.0;
 		    currentAngle2 = currentAngle2*.9 + lclAngle*.1;
+		    if (angleStarted ==0){
+		      angleStarted = 1;
+		      currentAngle1 = lclAngle;
+		      currentAngle2 = lclAngle;
+		    }
 
 
 		 
 		}
-
 	}
 
     }
