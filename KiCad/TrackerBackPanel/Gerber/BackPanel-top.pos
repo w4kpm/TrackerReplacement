@@ -1,0 +1,40 @@
+### Module positions - created on Wed 20 May 2020 03:52:30 PM EDT ###
+### Printed by Pcbnew version kicad 5.1.5+dfsg1-2build2
+## Unit = mm, Angle = deg.
+## Side : top
+# Ref     Val                  Package                                                           PosX       PosY       Rot  Side
+C1        1uF                  C_1206_3216Metric                                             139.7000   -44.1000    0.0000  top
+C2        .1uF                 C_1206_3216Metric                                             147.3000   -44.1000  180.0000  top
+C3        1uF                  C_1206_3216Metric                                             132.0000   -52.7000   90.0000  top
+C4        .1uF                 C_1206_3216Metric                                             159.0000   -60.9000   90.0000  top
+C5        1uF                  C_1206_3216Metric                                             159.0000   -54.2000  270.0000  top
+C6        .1uF                 C_1206_3216Metric                                             148.1000   -71.4000  180.0000  top
+C7        1uF                  C_1206_3216Metric                                             141.7000   -71.3000    0.0000  top
+C8        220uF                CP_Elec_10x10                                                 125.5000   -73.7000  270.0000  top
+C9        .1uF                 C_1206_3216Metric                                             132.1000   -61.1000   90.0000  top
+C10       .1uF                 C_1206_3216Metric                                             132.0000   -80.9000    0.0000  top
+C11       .1uF                 C_1206_3216Metric                                             124.6000  -102.3000  270.0000  top
+C12       220uF                CP_Elec_10x10                                                 113.4000   -73.8000  270.0000  top
+C13       100uF                CP_Elec_6.3x5.2                                               174.0000  -112.8000   90.0000  top
+C14       1uF                  C_1206_3216Metric                                             177.8000  -144.5000   90.0000  top
+C15       1uF                  C_1206_3216Metric                                             172.7000  -144.4000   90.0000  top
+C16       100uF                CP_Elec_6.3x5.2                                               184.9000  -112.8000  180.0000  top
+D1        D_TVS_x2_AAC         SOT-23                                                        148.1000   -87.3000  180.0000  top
+D2        D_TVS_x2_AAC         SOT-23                                                        118.0500  -117.5000   90.0000  top
+F1        Polyfuse_Small       R_1812_4532Metric                                             156.8380   -86.3000  180.0000  top
+F2        Polyfuse_Small       R_1812_4532Metric                                             156.8380   -92.1000  180.0000  top
+F3        Polyfuse_Small       R_1812_4532Metric                                             121.5000  -124.3380   90.0000  top
+F4        Polyfuse_Small       R_1812_4532Metric                                             114.5000  -124.2620   90.0000  top
+R1        TBU                  TBU                                                           142.3314   -83.3171  270.0000  top
+R2        TBU                  TBU                                                           141.9860   -93.9594  270.0000  top
+R3        TBU                  TBU                                                           123.8555  -110.6119    0.0000  top
+R4        TBU                  TBU                                                           111.9632  -110.7796  180.0000  top
+RV1       Varistor             R_1210_3225Metric                                             159.2000   -80.4000   90.0000  top
+RV2       Varistor             R_1210_3225Metric                                             160.1000   -97.8000  270.0000  top
+RV3       Varistor             R_1210_3225Metric                                             121.5000  -133.9000  270.0000  top
+RV4       Varistor             R_1210_3225Metric                                             114.8000  -133.8000  270.0000  top
+SW1       SW-DIP-8             SW_DIP_SPSTx08_Slide_6.7x21.88mm_W8.61mm_P2.54mm_LowProfile   152.0000   -33.5000  270.0000  top
+U1        STM32F303V(B-C)Tx_u  LQFP-100_14x14mm_P0.5mm                                       145.3000   -57.9000    0.0000  top
+U3        SN65HV7X             SOIC-8_3.9x4.9mm_P1.27mm                                      131.8000   -87.5350    0.0000  top
+U4        SN65HV7X             SOIC-8_3.9x4.9mm_P1.27mm                                      117.6000  -102.4000  270.0000  top
+## End

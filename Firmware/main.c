@@ -1,7 +1,7 @@
 /*
     ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    Licensed under the Apache License, Version 2.0 (the "License");
+   Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
@@ -221,7 +221,7 @@ void erase_flash(uint16_t *flash)
     
     FLASH->AR = flash;                     // set page to flash
     
-    FLASH->CR |= FLASH_CR_STRT;            // start erasing
+    FLASH->CR |= FLASH_CR_STRT;          // start erasing
     
     while ((FLASH->SR & FLASH_SR_BSY) == FLASH_SR_BSY); // loop till done
 							// watchdog should
@@ -477,7 +477,15 @@ void startTracker(){
   }
 }
 
-    
+void updateFlash(){
+  int x;
+  erase_flash(flash1);
+  parameters[7] = error;
+  for (x=0;x<10;x++)
+    write_flash(parameters[x],flash1+x);
+}
+
+
 static THD_WORKING_AREA(waThread4, 2048);
 static THD_FUNCTION(Thread4, arg) {
     int charnum;
@@ -572,6 +580,7 @@ static THD_FUNCTION(Thread4, arg) {
 	      if (reg==7){
 		// reset error
 		error = NO_ERROR;
+		updateFlash();
 		lclError =NO_ERROR;
 	      }
 
@@ -592,9 +601,7 @@ static THD_FUNCTION(Thread4, arg) {
 		code =  (lcltext[4]<<8)|lcltext[5];
 		chprintf(&SD1,"Write Flash\r\n");
 		if (code==0x1234){
-		  erase_flash(flash1);
-		  for (x=0;x<10;x++)
-		    write_flash(parameters[x],flash1+x);
+		  updateFlash();
 		  reset = 1;
 		  lclError=NO_ERROR;
 		}
@@ -791,7 +798,7 @@ static THD_FUNCTION(Thread7, arg) {
 
 	      {
 		  
-		  //chprintf((BaseSequentialStream*)&SD1,"got char: %x\r\n",b);
+		  chprintf((BaseSequentialStream*)&SD1,"got bchar: %x\r\n",b);
 		  lcl_btn_state[rx3_queue_pos++]=b;
 		  if ((b == 10) && (rx3_queue_pos > 0)){
 		      
@@ -857,6 +864,9 @@ void goEast(void){
     if (running == 0)
 	chMBPostTimeout(&SSMbx,0,TIME_INFINITE); // let our mailbox know
     running =1;
+    chThdSleepMilliseconds(200);
+    westLimit = !(palReadPad(GPIOE,3));
+    eastLimit = !(palReadPad(GPIOE,4));
 
     goingEast = 1;
     goingWest = 0;
@@ -868,6 +878,10 @@ void goWest(void){
     if (running == 0)
 	chMBPostTimeout(&SSMbx,0,TIME_INFINITE); // let our mailbox know
     running = 1;
+    chThdSleepMilliseconds(200);
+    westLimit = !(palReadPad(GPIOE,3));
+    eastLimit = !(palReadPad(GPIOE,4));
+
     goingEast = 0;
     goingWest = 1;
 
@@ -893,8 +907,9 @@ void updateAngles(){
     //angleCount = max(20,angleCount++);
     if ((abs(((currentAngle1-currentAngle2)*10.0))>angleDiff)&&(angleCount > 90)){
       error = ANGLE_DIFF_ERROR;
+      updateFlash();
       stopTracker();
-      chprintf(&SD2,"@%c%cAngleErr \r\n",encodePos(1),encodePos(10));
+      //chprintf(&SD2,"@%c%cAngleErr \r\n",encodePos(1),encodePos(10));
     }
   }
 }
@@ -1018,6 +1033,7 @@ int main(void) {
     parameters[4] = stoptime;
     parameters[5] = angleMode;
     parameters[6] = angleDiff;
+    parameters[6] = error;
     chprintf((BaseSequentialStream*)&SD1,"Resetting Flash -\r\n");
     erase_flash(flash1);
     for (x=0;x<10;x++)
@@ -1040,6 +1056,7 @@ int main(void) {
     stoptime = parameters[4];
     angleMode = parameters[5];
     angleDiff = parameters[6];
+    error = parameters[7];
     for (x=0;x<10;x++)
       chprintf((BaseSequentialStream*)&SD1,"Getting Flash %d = %d -\r\n",x,parameters[x]);
     //erase_flash(flash1);
@@ -1130,34 +1147,36 @@ int main(void) {
 	  
 	  if (goingEast && (currentAngle > setPoint)){
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cStop     \r\n",encodePos(1),encodePos(10));
+	      //chprintf(&SD2,"@%c%cStop     \r\n",encodePos(1),encodePos(10));
 	  }
 	  if (goingWest && (currentAngle < setPoint)){
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cStop     \r\n",encodePos(1),encodePos(10));
+	      //chprintf(&SD2,"@%c%cStop     \r\n",encodePos(1),encodePos(10));
 	  }
 
 	  if ((startMove)&&(currentAngle<setPoint)){
 	      startMove = 0;
-	      chprintf(&SD2,"@%c%cEast     \r\n",encodePos(1),encodePos(10));
+	      //chprintf(&SD2,"@%c%cEast     \r\n",encodePos(1),encodePos(10));
 	      chprintf(&SD1,"Move East \r\n");
 	      goEast();
 	  }
 	  if ((startMove)&&(currentAngle>setPoint)){
 	      startMove = 0;
-	      chprintf(&SD2,"@%c%cWest     \r\n",encodePos(1),encodePos(10));
+	      //chprintf(&SD2,"@%c%cWest     \r\n",encodePos(1),encodePos(10));
 	      chprintf(&SD1,"Move West \r\n");
 
 	      goWest();
 	  }
 	  if (goingWest && (currentAngle < -stopDeg/10.0)){
 	      error = WEST_ANGLE_EXCEED_ERROR;
-	      chprintf(&SD2,"@%c%cWExceed %d \r\n",encodePos(1),encodePos(10),error);
+	      updateFlash();
+	      //chprintf(&SD2,"@%c%cWExceed %d \r\n",encodePos(1),encodePos(10),error);
 	      stopTracker();
 	  }
 	  if (goingEast && (currentAngle > stopDeg/10.0)){
 	      error = EAST_ANGLE_EXCEED_ERROR;
-	      chprintf(&SD2,"@%c%cEExceed %d \r\n",encodePos(1),encodePos(10),error);
+	      updateFlash();
+	      //chprintf(&SD2,"@%c%cEExceed %d \r\n",encodePos(1),encodePos(10),error);
 	      stopTracker();
 	  }
 
@@ -1169,8 +1188,9 @@ int main(void) {
 	  }
 	  if (running && (stallSeconds > stoptime)){
 	      error = STALL_ERROR;
+	      updateFlash();
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cStallErr %d \r\n",encodePos(1),encodePos(10),error);
+	      //chprintf(&SD2,"@%c%cStallErr %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 
 	  if (running && (currentAmps*10 > slowAmpsThresh)){
@@ -1181,25 +1201,26 @@ int main(void) {
 	  }
 	  if (running && (strainSeconds > stoptime)){
 	      error = STRAIN_ERROR;
+	      updateFlash();
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cStrain %d \r\n",encodePos(1),encodePos(10),error);
+	      //chprintf(&SD2,"@%c%cStrain %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 	      
 	if (running && (currentAmps*10 > fastAmpsThresh)){
 	      error=FAST_BLOW_ERROR;
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cOCurr %d \r\n",encodePos(1),encodePos(10),error);
+	      //chprintf(&SD2,"@%c%cOCurr %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 
 	  if (goingEast && eastLimit){
 	    error=EAST_LIMIT_ERROR;
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cELimit %d \r\n",encodePos(1),encodePos(10),error);
+	      //chprintf(&SD2,"@%c%cELimit %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 	  if (goingWest && westLimit){
 	      error=WEST_LIMIT_ERROR;
 	      stopTracker();
-	      chprintf(&SD2,"@%c%cWLimit %d \r\n",encodePos(1),encodePos(10),error);
+	      //chprintf(&SD2,"@%c%cWLimit %d \r\n",encodePos(1),encodePos(10),error);
 	  }
 		  
 	      
@@ -1242,6 +1263,7 @@ int main(void) {
 	      error =0;
 	      maxAmps=0.0;
 	      stallSeconds = 0;
+	      updateFlash();
 	      chprintf(&SD2,"@%c%cReset \r\n",encodePos(1),encodePos(10),error);
 		  
 	  }
@@ -1276,7 +1298,7 @@ int main(void) {
 	  if ((btn_state[6] == '1')&&(mode==1))
 	    {
 	      error = EMERGENCY_STOP_ERROR;
-	      chprintf(&SD2,"@%c%cEStop  %d \r\n",encodePos(1),encodePos(10),error);
+	      updateFlash();
 	      stopTracker();	    
 	    }
 
@@ -1295,6 +1317,34 @@ int main(void) {
 
 	  currentSpeed = travelQueue[9]-currentAngle;
 
+
+	  if (error == NO_ERROR)
+	    {
+	      if (goingEast)
+		chprintf(&SD2,"@%c%c  East    \r\n",encodePos(1),encodePos(10));
+	      else if (goingWest)
+		chprintf(&SD2,"@%c%c  West    \r\n",encodePos(1),encodePos(10));
+	      else
+		chprintf(&SD2,"@%c%c          \r\n",encodePos(1),encodePos(10));
+	    }
+	  if (error == FAST_BLOW_ERROR)
+	    chprintf(&SD2,"@%c%cFstBlw %d \r\n",encodePos(1),encodePos(10),error);
+	  if (error == EAST_LIMIT_ERROR)
+	    chprintf(&SD2,"@%c%cELimit %d \r\n",encodePos(1),encodePos(10),error);
+	  if (error == WEST_LIMIT_ERROR)
+	    chprintf(&SD2,"@%c%cWLimit %d \r\n",encodePos(1),encodePos(10),error);
+	  if (error == STALL_ERROR)
+	    chprintf(&SD2,"@%c%cStallE %d \r\n",encodePos(1),encodePos(10),error);
+	  if (error == ANGLE_DIFF_ERROR)
+	    chprintf(&SD2,"@%c%cAngDif %d \r\n",encodePos(1),encodePos(10),error);
+	  if (error == EAST_ANGLE_EXCEED_ERROR)
+	    chprintf(&SD2,"@%c%cEXceed %d \r\n",encodePos(1),encodePos(10),error);
+	  if (error == WEST_ANGLE_EXCEED_ERROR)
+	    chprintf(&SD2,"@%c%cWXceed %d \r\n",encodePos(1),encodePos(10),error);
+	  if (error == EMERGENCY_STOP_ERROR)
+	    chprintf(&SD2,"@%c%cEStop  %d \r\n",encodePos(1),encodePos(10),error);
+
+	  
 	  if (goingEast)
 	    currentSpeed = -currentSpeed;
 	  speed = currentSpeed * 10;
