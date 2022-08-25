@@ -41,7 +41,7 @@ will flag an error - resetTracker.py has been used to reset these
 problems.
 
 Possible error conditions are as follows:
-
+`
 #define STRAIN_ERROR 1  = Amerage above 'soft' level for a preset time period
 #define FAST_BLOW_ERROR 2 = Amperage above 'high' amp level
 #define EAST_LIMIT_ERROR 3  = east limit switch activated
@@ -51,3 +51,4 @@ Possible error conditions are as follows:
 #define EAST_ANGLE_EXCEED_ERROR 7 = Angle too high in the east direction (software defined failsafe for limit switch) 
 #define WEST_ANGLE_EXCEED_ERROR 8 = Angle too high in the west direction (software defined failsafe for limit switch) 
 #define EMERGENCY_STOP_ERROR 9 = e stop activated at console
+`
