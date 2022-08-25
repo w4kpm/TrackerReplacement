@@ -1,5 +1,13 @@
 # Tracker replacement #
 
+ChibiOS - A linked repo for the embedded OS
+Firmware - Firmware code for the back panel
+FrontPanelFirmware - Firmware code for the front panel
+KiCad - all board design files using OSS KiCad
+Testing - python files used for original testing of the board
+TrackerControlCode - code use in production for updating tracker position and for resetting errors remotely. 
+
+
 Included in this repo:
    * Board design files for user interface panel and tracker controller
    * Firmware for both interface panel and tracker controller
