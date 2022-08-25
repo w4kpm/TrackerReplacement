@@ -41,14 +41,13 @@ will flag an error - resetTracker.py has been used to reset these
 problems.
 
 Possible error conditions are as follows:
-`
-#define STRAIN_ERROR 1  = Amerage above 'soft' level for a preset time period
-#define FAST_BLOW_ERROR 2 = Amperage above 'high' amp level
-#define EAST_LIMIT_ERROR 3  = east limit switch activated
-#define WEST_LIMIT_ERROR 4 = west limit switch activated
-#define STALL_ERROR 5 = too long a time of no panel movement when the motor has been engaged
-#define ANGLE_DIFF_ERROR 6 = too much difference between front and back panel
-#define EAST_ANGLE_EXCEED_ERROR 7 = Angle too high in the east direction (software defined failsafe for limit switch) 
-#define WEST_ANGLE_EXCEED_ERROR 8 = Angle too high in the west direction (software defined failsafe for limit switch) 
-#define EMERGENCY_STOP_ERROR 9 = e stop activated at console
-`
+
+* #define STRAIN_ERROR 1  = Amerage above 'soft' level for a preset time period
+* #define FAST_BLOW_ERROR 2 = Amperage above 'high' amp level
+* #define EAST_LIMIT_ERROR 3  = east limit switch activated
+* #define WEST_LIMIT_ERROR 4 = west limit switch activated
+* #define STALL_ERROR 5 = too long a time of no panel movement when the motor has been engaged
+* #define ANGLE_DIFF_ERROR 6 = too much difference between front and back panel
+* #define EAST_ANGLE_EXCEED_ERROR 7 = Angle too high in the east direction (software defined failsafe for limit switch) 
+* #define WEST_ANGLE_EXCEED_ERROR 8 = Angle too high in the west direction (software defined failsafe for limit switch) 
+* #define EMERGENCY_STOP_ERROR 9 = e stop activated at console
